@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Header } from "@/components/site/header";
+import { Footer } from "@/components/site/footer";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -15,18 +18,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const defaultTitle = `${SITE_NAME} - PC parts, prices and compatibility`;
+
 export const metadata: Metadata = {
-  // Base for every relative URL in metadata (canonical, Open Graph images).
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  ),
+  // Makes relative URLs in metadata (canonical, images) absolute.
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "PC Builder | Compare Parts, Check Compatibility, Track Prices",
-    // Pages that set their own title become "RTX 5070 | PC Builder".
-    template: "%s | PC Builder",
+    default: defaultTitle,
+    // A page that sets title: "Ryzen 7 7800X3D" becomes "Ryzen 7 7800X3D | PC Builder".
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Compare PC components, check compatibility, build your PC and track prices.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: defaultTitle,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -42,7 +50,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         inter.variable,
       )}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* Lets keyboard users jump past the menu. Visible only when focused. */}
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow"
+        >
+          Skip to content
+        </a>
+        <Header />
+        <main id="main" className="flex-1">
+          {children}
+        </main>
+        <Footer />
+      </body>
     </html>
   );
 }
