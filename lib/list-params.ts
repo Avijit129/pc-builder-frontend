@@ -1,7 +1,12 @@
 // lib/list-params.ts
-// The list pages keep their state in the URL: /cpu?search=ryzen&sort=price_low&page=2
+// The list pages keep their state in the URL:
+//   /cpu?search=ryzen&sort=price_low&manufacturer=amd&page=2
 // This file reads those values and cleans them. Laravel answers 422 for bad
 // values (see docs/frontend-api.md, section 3), so we never send raw input.
+// A bad value is dropped (treated as "not set"), the page still works.
+
+import { LIST_FILTERS, type FilterDef } from "@/lib/list-filters";
+import type { ComponentType } from "@/lib/types";
 
 export const SORT_OPTIONS = [
   { value: "name", label: "Name (A-Z)" },
@@ -21,6 +26,10 @@ export type ListParams = {
   search: string;
   sort: SortKey;
   page: number;
+  /** Brand slug, for example "amd". "" means all brands. */
+  manufacturer: string;
+  /** The extra filters of this list. Only valid values. Key = URL name. */
+  filters: Record<string, string>;
 };
 
 /** What Next.js gives us as searchParams. */
@@ -31,7 +40,39 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
-export function parseListParams(raw: RawSearchParams): ListParams {
+// A brand slug is letters, numbers, dash and underscore (for example "msi").
+// Laravel allows at most 100 characters.
+function cleanManufacturer(value: string): string {
+  const slug = value.trim();
+
+  return /^[A-Za-z0-9_-]{1,100}$/.test(slug) ? slug : "";
+}
+
+// Returns "" when the value is not valid for this filter.
+function cleanFilterValue(filter: FilterDef, rawValue: string): string {
+  const value = rawValue.trim();
+
+  if (value === "") return "";
+
+  if (filter.kind === "select") {
+    // Only values from our list. Laravel compares them exactly.
+    return filter.options.includes(value) ? value : "";
+  }
+
+  const number = Number(value);
+
+  return Number.isInteger(number) &&
+    number >= filter.min &&
+    number <= filter.max
+    ? String(number)
+    : "";
+}
+
+/** "type" decides which extra filters are read (see lib/list-filters.ts). */
+export function parseListParams(
+  raw: RawSearchParams,
+  type: ComponentType,
+): ListParams {
   // The API allows at most 100 characters.
   const search = first(raw.search).trim().slice(0, 100);
 
@@ -46,7 +87,27 @@ export function parseListParams(raw: RawSearchParams): ListParams {
       ? Math.min(pageNumber, 10000)
       : 1;
 
-  return { search, sort, page };
+  const manufacturer = cleanManufacturer(first(raw.manufacturer));
+
+  const filters: Record<string, string> = {};
+
+  for (const filter of LIST_FILTERS[type]) {
+    const value = cleanFilterValue(filter, first(raw[filter.key]));
+
+    if (value !== "") filters[filter.key] = value;
+  }
+
+  return { search, sort, page, manufacturer, filters };
+}
+
+/** True when anything narrows or changes the list. Used for the Clear button. */
+export function hasActiveFilters(params: ListParams): boolean {
+  return (
+    params.search !== "" ||
+    params.sort !== DEFAULT_SORT ||
+    params.manufacturer !== "" ||
+    Object.keys(params.filters).length > 0
+  );
 }
 
 /** Build a clean list URL. Default values are left out of the URL. */
@@ -59,6 +120,12 @@ export function listHref(
 
   if (params.search) query.set("search", params.search);
   if (params.sort !== DEFAULT_SORT) query.set("sort", params.sort);
+  if (params.manufacturer) query.set("manufacturer", params.manufacturer);
+
+  for (const [key, value] of Object.entries(params.filters)) {
+    query.set(key, value);
+  }
+
   if (page > 1) query.set("page", String(page));
 
   const queryString = query.toString();
