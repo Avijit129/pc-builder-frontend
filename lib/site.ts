@@ -106,3 +106,8 @@ export const CATEGORIES: Category[] = [
     icon: Fan,
   },
 ];
+
+/** Find a category by its URL part ("cpu", "case" ...). Returns undefined if unknown. */
+export function getCategoryBySegment(segment: string): Category | undefined {
+  return CATEGORIES.find((category) => category.segment === segment);
+}
