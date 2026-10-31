@@ -1,12 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ListChecks, ShieldCheck, Tag } from "lucide-react";
+import { JsonLd } from "@/components/catalog/json-ld";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES } from "@/lib/site";
+import {
+  BUILDER_ENABLED,
+  CATEGORIES,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 // The title comes from the layout. Here we only set the canonical URL.
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
+};
+
+// The homepage address, for example "https://www.example.com/".
+const homeUrl = new URL("/", SITE_URL).toString();
+
+// Structured data for search engines: what this site is, and who runs it.
+// Add a "logo" to the Organization when you have a logo file on the site.
+const webSite = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: homeUrl,
+  description: SITE_DESCRIPTION,
+};
+
+const organization = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: SITE_NAME,
+  url: homeUrl,
 };
 
 const FEATURES = [
@@ -33,6 +60,9 @@ const FEATURES = [
 export default function Home() {
   return (
     <>
+      <JsonLd data={webSite} />
+      <JsonLd data={organization} />
+
       <section className="border-b bg-muted/30">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
           <div className="max-w-2xl">
@@ -44,13 +74,20 @@ export default function Home() {
               fits together before you buy.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link href="/builder">
-                  Start a build
-                  <ArrowRight />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
+              {/* Hidden until the /builder page exists (see BUILDER_ENABLED in lib/site.ts). */}
+              {BUILDER_ENABLED && (
+                <Button asChild size="lg">
+                  <Link href="/builder">
+                    Start a build
+                    <ArrowRight />
+                  </Link>
+                </Button>
+              )}
+              <Button
+                asChild
+                size="lg"
+                variant={BUILDER_ENABLED ? "outline" : "default"}
+              >
                 <Link href="/cpu">Browse CPUs</Link>
               </Button>
             </div>

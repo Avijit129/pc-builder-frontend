@@ -111,3 +111,7 @@ export const CATEGORIES: Category[] = [
 export function getCategoryBySegment(segment: string): Category | undefined {
   return CATEGORIES.find((category) => category.segment === segment);
 }
+
+// Set to true when the /builder page exists (step E).
+// While it is false, no link on the site points to /builder.
+export const BUILDER_ENABLED = false;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/site/mobile-nav";
-import { CATEGORIES, SITE_NAME } from "@/lib/site";
+import { BUILDER_ENABLED, CATEGORIES, SITE_NAME } from "@/lib/site";
 
 export function Header() {
   return (
@@ -26,11 +26,14 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <div className="hidden sm:block">
-            <Button asChild size="sm">
-              <Link href="/builder">Start a build</Link>
-            </Button>
-          </div>
+          {/* Hidden until the /builder page exists (see BUILDER_ENABLED in lib/site.ts). */}
+          {BUILDER_ENABLED && (
+            <div className="hidden sm:block">
+              <Button asChild size="sm">
+                <Link href="/builder">Start a build</Link>
+              </Button>
+            </div>
+          )}
           <MobileNav />
         </div>
       </div>
