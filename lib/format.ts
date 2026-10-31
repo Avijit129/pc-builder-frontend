@@ -45,3 +45,15 @@ export function formatSpecValue(
 
   return options.humanize ? humanize(text) : text;
 }
+
+/** 399.99 + "EUR" -> "€399.99". Falls back to plain text if the currency code is not valid. */
+export function formatMoney(value: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+    }).format(value);
+  } catch {
+    return `${value} ${currency}`;
+  }
+}
