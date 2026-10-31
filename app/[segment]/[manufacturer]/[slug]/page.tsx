@@ -5,6 +5,8 @@ import { Breadcrumbs } from "@/components/catalog/breadcrumbs";
 import { ComponentHeader } from "@/components/catalog/component-header";
 import { DetailSkeleton } from "@/components/catalog/detail-skeleton";
 import { JsonLd } from "@/components/catalog/json-ld";
+import { FeatureList } from "@/components/catalog/feature-list";
+import { SpecTables } from "@/components/catalog/spec-tables";
 import { apiGet } from "@/lib/api";
 import { getComponent } from "@/lib/get-component";
 import { CATEGORIES, getCategoryBySegment } from "@/lib/site";
@@ -127,6 +129,11 @@ async function ComponentPageContent({ params }: Props) {
       <Breadcrumbs items={component.seo.breadcrumbs} />
 
       <ComponentHeader component={component} />
+
+      <div className="mt-12 space-y-12">
+        <SpecTables specs={component.specs} />
+        <FeatureList features={component.features} />
+      </div>
     </>
   );
 }

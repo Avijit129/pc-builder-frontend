@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { BrandLinks } from "@/components/catalog/brand-links";
 import { ComponentCard } from "@/components/catalog/component-card";
 import { ListToolbar } from "@/components/catalog/list-toolbar";
 import { Pagination } from "@/components/catalog/pagination";
 import { apiGet } from "@/lib/api";
+import { getBrands } from "@/lib/get-brands";
 import { LIST_FILTERS } from "@/lib/list-filters";
 import {
   PER_PAGE,
@@ -12,21 +14,24 @@ import {
   type RawSearchParams,
 } from "@/lib/list-params";
 import type { Category } from "@/lib/site";
-import type { Brand, BrandList, ListItem, Paginated } from "@/lib/types";
+import type { Brand, ListItem, Paginated } from "@/lib/types";
 
 type Props = {
   category: Category;
   searchParams: Promise<RawSearchParams>;
+  /**
+   * Set on a brand page (/cpu/amd). The list then only shows this brand, the
+   * brand select is hidden, and links stay on the brand page.
+   */
+  brand?: Brand;
 };
 
-// The brands that have products in this category (GET /api/catalog/{segment}/brands).
-// The answer is cached by apiGet. If this call fails we return null: the page
-// still works, it only hides the brand field.
-async function loadBrands(segment: string): Promise<Brand[] | null> {
+// The brands that have products in this category (see lib/get-brands.ts).
+// If this call fails we return null: the page still works, it only hides the
+// brand select and the brand links.
+async function loadBrands(category: Category): Promise<Brand[] | null> {
   try {
-    const result = await apiGet<BrandList>(`/catalog/${segment}/brands`);
-
-    return result.data;
+    return await getBrands(category);
   } catch {
     return null;
   }
@@ -34,19 +39,35 @@ async function loadBrands(segment: string): Promise<Brand[] | null> {
 
 // Reading searchParams is "request data", so the page must wrap this
 // component in <Suspense> (the page does that).
-export async function CategoryListing({ category, searchParams }: Props) {
+export async function CategoryListing({
+  category,
+  searchParams,
+  brand,
+}: Props) {
   const rawParams = parseListParams(await searchParams, category.type);
 
-  const brands = await loadBrands(category.segment);
+  const brands = await loadBrands(category);
 
-  // A brand that is not in the list (a typo in the URL) is ignored, the same
-  // way as any other bad value. If the brand list could not be loaded, we
-  // cannot check it, so we keep the value.
-  const params: ListParams =
-    brands !== null &&
-    !brands.some((brand) => brand.slug === rawParams.manufacturer)
-      ? { ...rawParams, manufacturer: "" }
-      : rawParams;
+  // The address of this list without the "?...":
+  //   /cpu on a category page, /cpu/amd on a brand page.
+  // ListToolbar and Pagination call this "segment". It is the path without
+  // the first "/", so they work for both kinds of page without changes.
+  const basePath = brand
+    ? `${category.segment}/${brand.slug}`
+    : category.segment;
+
+  // Keep ?manufacturer= only on a category page, and only when it is a real
+  // brand. On a brand page the brand is in the path, so it must not also be in
+  // the query string. A typo in the URL is ignored like any other bad value.
+  // If the brand list could not be loaded we cannot check it, so we keep it.
+  const keepBrandFilter =
+    brand === undefined &&
+    (brands === null ||
+      brands.some((item) => item.slug === rawParams.manufacturer));
+
+  const params: ListParams = keepBrandFilter
+    ? rawParams
+    : { ...rawParams, manufacturer: "" };
 
   // If Laravel is down or answers with an error, this throws and the
   // error.tsx file next to the page shows the error screen.
@@ -58,7 +79,7 @@ export async function CategoryListing({ category, searchParams }: Props) {
       page: params.page,
       per_page: PER_PAGE,
       // Empty values are skipped by apiGet.
-      manufacturer: params.manufacturer,
+      manufacturer: brand ? brand.slug : params.manufacturer,
       ...params.filters,
     },
   );
@@ -68,11 +89,12 @@ export async function CategoryListing({ category, searchParams }: Props) {
   return (
     <>
       <ListToolbar
-        segment={category.segment}
+        segment={basePath}
         label={category.label}
         params={params}
         filters={LIST_FILTERS[category.type]}
-        brands={brands}
+        // On a brand page there is no brand select (the brand is fixed).
+        brands={brand ? null : brands}
       />
 
       <p className="mt-6 text-sm text-muted-foreground" aria-live="polite">
@@ -86,7 +108,10 @@ export async function CategoryListing({ category, searchParams }: Props) {
             Try a different search, or clear the filters.
           </p>
           <Button asChild variant="outline" className="mt-4">
-            <Link href={`/${category.segment}`}>Show all {category.label}</Link>
+            <Link href={`/${basePath}`}>
+              Show all{" "}
+              {brand ? `${brand.name} ${category.label}` : category.label}
+            </Link>
           </Button>
         </div>
       ) : (
@@ -100,11 +125,19 @@ export async function CategoryListing({ category, searchParams }: Props) {
       )}
 
       <Pagination
-        segment={category.segment}
+        segment={basePath}
         params={params}
         currentPage={current_page}
         lastPage={last_page}
       />
+
+      {brands !== null && (
+        <BrandLinks
+          category={category}
+          brands={brands}
+          currentSlug={brand?.slug}
+        />
+      )}
     </>
   );
 }

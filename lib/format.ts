@@ -13,7 +13,7 @@ export function formatPrice(value: number | null | undefined): string | null {
 }
 
 /** "aio_liquid" -> "Aio liquid" */
-function humanize(text: string): string {
+export function humanize(text: string): string {
   const spaced = text.replace(/_/g, " ");
 
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
