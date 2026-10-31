@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/catalog/json-ld";
 import { FeatureList } from "@/components/catalog/feature-list";
 import { SpecTables } from "@/components/catalog/spec-tables";
 import { PriceOffers } from "@/components/catalog/price-offers";
+import { TypeExtras } from "@/components/catalog/type-extras";
 import { apiGet } from "@/lib/api";
 import { getComponent } from "@/lib/get-component";
 import { CATEGORIES, getCategoryBySegment } from "@/lib/site";
@@ -134,6 +135,7 @@ async function ComponentPageContent({ params }: Props) {
       <div className="mt-12 space-y-12">
         <PriceOffers offers={component.prices} />
         <SpecTables specs={component.specs} />
+        <TypeExtras category={category} component={component} />
         <FeatureList features={component.features} />
       </div>
     </>

@@ -57,3 +57,27 @@ export function formatMoney(value: number, currency: string): string {
     return `${value} ${currency}`;
   }
 }
+
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 2,
+});
+
+/** 28500 -> "28,500". */
+export function formatNumber(value: number): string {
+  return numberFormatter.format(value);
+}
+
+// UTC, so the day never depends on the server time zone.
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  dateStyle: "medium",
+  timeZone: "UTC",
+});
+
+/** "2026-09-21" -> "Sep 21, 2026". Returns null when missing or not a date. */
+export function formatDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+
+  const date = new Date(iso);
+
+  return Number.isNaN(date.getTime()) ? null : dateFormatter.format(date);
+}
