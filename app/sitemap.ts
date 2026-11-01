@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { apiGet } from "@/lib/api";
 import { SITE_URL } from "@/lib/site";
 import type { ApiData, SitemapEntry } from "@/lib/types";
+import { BUILDER_ENABLED, SITE_URL } from "@/lib/site";
 
 // Next.js serves this file as /sitemap.xml.
 //
@@ -79,6 +80,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const home = absoluteUrl("/");
   items.set(home, { url: home, changeFrequency: "daily", priority: 1 });
+
+  // The builder page. Listed only when it is turned on (BUILDER_ENABLED in
+  // lib/site.ts), the same rule as the links to it.
+  if (BUILDER_ENABLED) {
+    const builder = absoluteUrl("/builder");
+    items.set(builder, {
+      url: builder,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    });
+  }
 
   for (const entry of fromLaravel) {
     // We build the URL from OUR site address and the path from Laravel, so the

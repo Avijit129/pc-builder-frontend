@@ -4,6 +4,7 @@
 // React state needs.
 
 import type { ComponentType, ListItem } from "@/lib/types";
+import { formatPrice } from "@/lib/format";
 
 /** One part, exactly as a list endpoint sends it (same as a card on a list page). */
 export type PartItem = ListItem<Record<string, unknown>>;
@@ -157,4 +158,18 @@ export function estimatePrice(parts: BuilderPart[]): PriceEstimate {
     pricedParts,
     unpricedParts,
   };
+}
+
+/**
+ * The price as text for the screen: "$1,299.00", or "At least $1,299.00" when
+ * some parts have no in-stock price. Returns null when no part has a price.
+ */
+export function describeEstimate(estimate: PriceEstimate): string | null {
+  if (estimate.total === null) return null;
+
+  const price = formatPrice(estimate.total);
+
+  if (price === null) return null;
+
+  return estimate.unpricedParts > 0 ? `At least ${price}` : price;
 }

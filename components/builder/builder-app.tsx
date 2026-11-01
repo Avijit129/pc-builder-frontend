@@ -7,76 +7,88 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SlotCard } from "@/components/builder/slot-card";
 import { CompatibilityPanel } from "@/components/builder/compatibility-panel";
+import { MobileStatusBar } from "@/components/builder/mobile-status-bar";
+import { SlotCard } from "@/components/builder/slot-card";
 import {
   addPart,
   changeQuantity,
+  describeEstimate,
   estimatePrice,
   partsOfType,
   removePart,
   type BuilderPart,
 } from "@/lib/builder";
-import { formatPrice } from "@/lib/format";
 import { CATEGORIES } from "@/lib/site";
 import type { ComponentType } from "@/lib/types";
+import { useBuildCheck } from "@/lib/use-build-check";
 
 export function BuilderApp() {
   const [parts, setParts] = useState<BuilderPart[]>([]);
   // Which slot has its picker open. Only one at a time.
   const [openType, setOpenType] = useState<ComponentType | null>(null);
 
+  // ONE check for the whole page. The side panel and the mobile bar both read
+  // it, so a change sends one request, not two.
+  const check = useBuildCheck(parts);
+
+  function clearBuild() {
+    setParts([]);
+    setOpenType(null);
+  }
+
   return (
-    <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-      <ul className="space-y-4">
-        {CATEGORIES.map((category) => {
-          const type = category.type;
+    <>
+      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <ul className="space-y-4">
+          {CATEGORIES.map((category) => {
+            const type = category.type;
 
-          return (
-            <li key={type}>
-              <SlotCard
-                category={category}
-                parts={partsOfType(parts, type)}
-                isOpen={openType === type}
-                onToggle={() =>
-                  setOpenType((current) => (current === type ? null : type))
-                }
-                onPick={(item) => {
-                  // (current) => ... always works with the newest list.
-                  setParts((current) => addPart(current, type, item));
-                  setOpenType(null);
-                }}
-                onRemove={(id) =>
-                  setParts((current) => removePart(current, type, id))
-                }
-                onChangeQuantity={(id, change) =>
-                  setParts((current) =>
-                    changeQuantity(current, type, id, change),
-                  )
-                }
-              />
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li key={type}>
+                <SlotCard
+                  category={category}
+                  parts={partsOfType(parts, type)}
+                  isOpen={openType === type}
+                  onToggle={() =>
+                    setOpenType((current) => (current === type ? null : type))
+                  }
+                  onPick={(item) => {
+                    // (current) => ... always works with the newest list.
+                    setParts((current) => addPart(current, type, item));
+                    setOpenType(null);
+                  }}
+                  onRemove={(id) =>
+                    setParts((current) => removePart(current, type, id))
+                  }
+                  onChangeQuantity={(id, change) =>
+                    setParts((current) =>
+                      changeQuantity(current, type, id, change),
+                    )
+                  }
+                />
+              </li>
+            );
+          })}
+        </ul>
 
-      {/* Sticky on wide screens. If the panel is taller than the screen, it
-          scrolls inside itself (max-h + overflow). lg:p-1 keeps the focus
-          rings from being cut off. */}
-      <aside
-        aria-label="Build summary and compatibility"
-        className="space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:p-1"
-      >
-        <BuildSummary
-          parts={parts}
-          onClear={() => {
-            setParts([]);
-            setOpenType(null);
-          }}
-        />
-        <CompatibilityPanel parts={parts} />
-      </aside>
-    </div>
+        {/* Sticky on wide screens. If the panel is taller than the screen, it
+            scrolls inside itself (max-h + overflow). lg:p-1 keeps the focus
+            rings from being cut off. The id is the target of the "Details"
+            link in the mobile bar. scroll-mt-20: the sticky header (h-16)
+            must not cover the top when someone jumps here. */}
+        <aside
+          id="build-summary"
+          aria-label="Build summary and compatibility"
+          className="scroll-mt-20 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:p-1"
+        >
+          <BuildSummary parts={parts} onClear={clearBuild} />
+          <CompatibilityPanel parts={parts} check={check} />
+        </aside>
+      </div>
+
+      <MobileStatusBar parts={parts} check={check} />
+    </>
   );
 }
 
@@ -89,6 +101,7 @@ function BuildSummary({
 }) {
   const count = parts.reduce((sum, part) => sum + part.quantity, 0);
   const estimate = estimatePrice(parts);
+  const price = describeEstimate(estimate);
 
   return (
     <section
@@ -108,14 +121,10 @@ function BuildSummary({
         <div className="flex justify-between gap-4">
           <dt className="text-muted-foreground">Estimated price</dt>
           <dd className="font-semibold">
-            {estimate.total === null ? (
+            {price ?? (
               <span className="font-normal text-muted-foreground">
                 No prices yet
               </span>
-            ) : estimate.unpricedParts > 0 ? (
-              `At least ${formatPrice(estimate.total)}`
-            ) : (
-              formatPrice(estimate.total)
             )}
           </dd>
         </div>

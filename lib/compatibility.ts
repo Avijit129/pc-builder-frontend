@@ -139,3 +139,23 @@ export function sortChecks(checks: CompatibilityCheck[]): CompatibilityCheck[] {
     (a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
   );
 }
+
+/** "2 problems · 1 warning · 3 could not be checked". Empty when there is nothing to report. */
+export function countText(checks: CompatibilityCheck[]): string {
+  const count = (status: CompatibilityStatus) =>
+    checks.filter((check) => check.status === status).length;
+
+  const fails = count("fail");
+  const warnings = count("warning");
+  const unknown = count("unknown");
+
+  return [
+    fails > 0 ? `${fails} ${fails === 1 ? "problem" : "problems"}` : null,
+    warnings > 0
+      ? `${warnings} ${warnings === 1 ? "warning" : "warnings"}`
+      : null,
+    unknown > 0 ? `${unknown} could not be checked` : null,
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" · ");
+}

@@ -1,152 +1,58 @@
 "use client";
 
 // components/builder/compatibility-panel.tsx
-// Sends the build to Laravel (POST /api/compatibility/check-build) and shows
-// the answer.
-//
-// How the loading works (same idea as part-picker.tsx):
-// - "bodyKey" is the request body as text. It only changes when the parts
-//   really change.
-// - The effect waits 500 ms, then sends the request. A new change cancels the
-//   old timer and the old call, so a fast clicker sends only ONE request.
-// - Every answer is saved with its "key". If the saved key is not the current
-//   key, we are still waiting. That way we never call setState directly in an
-//   effect.
+// Shows the result of the compatibility check. The check itself runs in
+// useBuildCheck (lib/use-build-check.ts), which BuilderApp calls once.
 
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckItem, StatusIcon } from "@/components/builder/check-item";
-import { ClientApiError, clientPost } from "@/lib/api-client";
 import { SLOTS, type BuilderPart } from "@/lib/builder";
-import {
-  OVERALL_TEXT,
-  buildCompatibilityBody,
-  sortChecks,
-} from "@/lib/compatibility";
+import { OVERALL_TEXT, countText, sortChecks } from "@/lib/compatibility";
 import { formatNumber } from "@/lib/format";
 import type {
-  ApiData,
   BuildCheckResult,
-  CompatibilityBody,
   CompatibilityCheck,
   CompatibilityStatus,
   PowerRequirement,
 } from "@/lib/types";
+import type { BuildCheckState } from "@/lib/use-build-check";
 import { cn } from "@/lib/utils";
-
-// Laravel allows 60 checks per minute per IP address, so we wait a little.
-const DEBOUNCE_MS = 500;
-
-type Answer = {
-  key: string;
-  result?: BuildCheckResult;
-  error?: string;
-};
-
-// What the user reads when something goes wrong.
-function errorMessage(error: ClientApiError): string {
-  if (error.status === 429) {
-    return error.retryAfter === null
-      ? "Too many checks in a short time. Please wait a moment and try again."
-      : `Too many checks in a short time. Please wait ${error.retryAfter} seconds and try again.`;
-  }
-
-  // A 422 has a message per field. Show the first one.
-  if (error.status === 422 && error.errors) {
-    const first = Object.values(error.errors)[0]?.[0];
-
-    if (first) return first;
-  }
-
-  return error.message;
-}
 
 type Props = {
   parts: BuilderPart[];
+  check: BuildCheckState;
 };
 
-export function CompatibilityPanel({ parts }: Props) {
-  const body = buildCompatibilityBody(parts);
-  const bodyKey = body === null ? null : JSON.stringify(body);
-
-  // Goes up by 1 when the user presses "Try again".
-  const [attempt, setAttempt] = useState(0);
-  const [answer, setAnswer] = useState<Answer | null>(null);
-
-  const key = `${bodyKey ?? "none"}|${attempt}`;
-
-  useEffect(() => {
-    // Fewer than 2 kinds of part: nothing to check.
-    if (bodyKey === null) return;
-
-    const controller = new AbortController();
-
-    const timer = setTimeout(() => {
-      // We depend on the TEXT (bodyKey), not on an object. A new object with
-      // the same content must not start a new request.
-      clientPost<ApiData<BuildCheckResult>>(
-        "/compatibility/check-build",
-        JSON.parse(bodyKey) as CompatibilityBody,
-        controller.signal,
-      )
-        .then((response) => {
-          if (controller.signal.aborted) return;
-          setAnswer({ key, result: response.data });
-        })
-        .catch((error: unknown) => {
-          if (controller.signal.aborted) return;
-
-          if (error instanceof ClientApiError) {
-            setAnswer({ key, error: errorMessage(error) });
-            return;
-          }
-
-          console.error(error);
-          setAnswer({ key, error: "Something went wrong. Please try again." });
-        });
-    }, DEBOUNCE_MS);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [bodyKey, key]);
-
-  // The answer is "current" only when it belongs to the current key.
-  const current = answer !== null && answer.key === key ? answer : null;
-  const loading = bodyKey !== null && current === null;
-  const error = current?.error;
-  // While a new check runs, we keep showing the old result (faded).
-  const result = answer?.result;
-
+export function CompatibilityPanel({ parts, check }: Props) {
   let content: ReactNode;
 
-  if (bodyKey === null) {
+  if (!check.enabled) {
     content = (
       <p className="mt-3 text-sm text-muted-foreground">
         Choose at least two kinds of parts, for example a CPU and a motherboard,
         to check if they fit together.
       </p>
     );
-  } else if (error) {
+  } else if (check.error) {
     content = (
       <div
         role="alert"
         className="mt-3 rounded-lg border border-destructive/40 p-4 text-sm"
       >
-        <p>{error}</p>
+        <p>{check.error}</p>
         <Button
           type="button"
           size="sm"
           variant="outline"
           className="mt-3"
-          onClick={() => setAttempt((count) => count + 1)}
+          onClick={check.retry}
         >
           Try again
         </Button>
       </div>
     );
-  } else if (result === undefined) {
+  } else if (check.result === null) {
     content = (
       <div className="mt-3 space-y-2" aria-hidden="true">
         <div className="h-16 animate-pulse rounded-lg border bg-muted/50" />
@@ -154,7 +60,9 @@ export function CompatibilityPanel({ parts }: Props) {
       </div>
     );
   } else {
-    content = <ResultView result={result} parts={parts} loading={loading} />;
+    content = (
+      <ResultView result={check.result} parts={parts} loading={check.loading} />
+    );
   }
 
   return (
@@ -168,7 +76,7 @@ export function CompatibilityPanel({ parts }: Props) {
         </h2>
         {/* A live region: screen readers say "Checking…" when it appears. */}
         <span role="status" className="text-xs text-muted-foreground">
-          {loading ? "Checking…" : ""}
+          {check.loading ? "Checking…" : ""}
         </span>
       </div>
 
@@ -193,26 +101,6 @@ const BORDER: Record<CompatibilityStatus, string> = {
   pass: "",
   not_applicable: "",
 };
-
-// "2 problems · 1 warning · 3 could not be checked"
-function countText(checks: CompatibilityCheck[]): string {
-  const count = (status: CompatibilityStatus) =>
-    checks.filter((check) => check.status === status).length;
-
-  const fails = count("fail");
-  const warnings = count("warning");
-  const unknown = count("unknown");
-
-  return [
-    fails > 0 ? `${fails} ${fails === 1 ? "problem" : "problems"}` : null,
-    warnings > 0
-      ? `${warnings} ${warnings === 1 ? "warning" : "warnings"}`
-      : null,
-    unknown > 0 ? `${unknown} could not be checked` : null,
-  ]
-    .filter((part): part is string => part !== null)
-    .join(" · ");
-}
 
 // A check about one RAM kit or SSD says which one.
 function subjectName(
