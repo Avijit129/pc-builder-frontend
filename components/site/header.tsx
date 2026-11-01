@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/site/mobile-nav";
+import { UserMenu } from "@/components/site/user-menu";
 import { BUILDER_ENABLED, CATEGORIES, SITE_NAME } from "@/lib/site";
 
 export function Header() {
@@ -34,6 +36,20 @@ export function Header() {
               </Button>
             </div>
           )}
+
+          {/* Reading the login cookie is request data, so it must be inside
+              Suspense. The rest of the header stays in the static page. */}
+          <Suspense
+            fallback={
+              <div
+                className="h-8 w-20 animate-pulse rounded-md bg-muted/50"
+                aria-hidden="true"
+              />
+            }
+          >
+            <UserMenu />
+          </Suspense>
+
           <MobileNav />
         </div>
       </div>

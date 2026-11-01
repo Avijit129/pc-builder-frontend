@@ -522,3 +522,13 @@ export type AuthResult = {
   /** About 30 days. */
   expires_at: string;
 };
+
+/** State of the login and register forms (see lib/actions/auth.ts). */
+export type AuthFormState = {
+  /** A message for the whole form, shown on top. */
+  message?: string;
+  /** Messages per field. Show errors[field][0] next to the input. */
+  errors?: Record<string, string[]>;
+  /** What the user typed (never the password), so the form can refill. */
+  values?: { name?: string; email?: string };
+};

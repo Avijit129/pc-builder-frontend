@@ -43,7 +43,7 @@ export class ApiError extends Error {
 }
 
 /** "/cpus" + { per_page: 12 }  ->  "http://localhost:8000/api/cpus?per_page=12" */
-function buildUrl(path: string, query?: QueryParams): string {
+export function buildUrl(path: string, query?: QueryParams): string {
   if (!API_URL) {
     throw new Error(
       "NEXT_PUBLIC_API_URL is not set. Add it to .env.local and restart the dev server.",
