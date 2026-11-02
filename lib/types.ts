@@ -532,3 +532,25 @@ export type AuthFormState = {
   /** What the user typed (never the password), so the form can refill. */
   values?: { name?: string; email?: string };
 };
+
+/* -------------------------------------------------------------------------- */
+/* Saving a build from the builder (see lib/actions/builds.ts)                */
+/* -------------------------------------------------------------------------- */
+
+/** What the builder sends to the save Server Action. */
+export type SaveBuildInput = {
+  /** null = make a new build. A slug = change that saved build. */
+  slug: string | null;
+  name: string;
+  parts: { type: ComponentType; component_id: number; quantity: number }[];
+};
+
+export type SaveBuildResult =
+  | { status: "saved"; slug: string; updated: boolean }
+  | { status: "needs_login" }
+  | {
+      status: "error";
+      message: string;
+      /** true: the saved build is gone, so the next save must create a new one. */
+      notFound?: boolean;
+    };

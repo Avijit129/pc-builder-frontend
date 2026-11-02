@@ -34,7 +34,7 @@ type Options = {
 };
 
 export async function serverRequest<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   options: Options = {},
 ): Promise<ServerResponse<T>> {

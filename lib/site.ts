@@ -114,4 +114,4 @@ export function getCategoryBySegment(segment: string): Category | undefined {
 
 // Set to true when the /builder page exists (step E).
 // While it is false, no link on the site points to /builder.
-export const BUILDER_ENABLED = false;
+export const BUILDER_ENABLED = true;

@@ -2,13 +2,14 @@
 
 // components/builder/builder-app.tsx
 // The whole PC Builder. It keeps the list of chosen parts in React state and
-// gives each slot card what it needs. Nothing is saved: a refresh starts a new
-// build (saving comes with accounts, step G).
+// gives each slot card what it needs. A refresh starts a new build. The only
+// thing we keep is a draft in sessionStorage while the user logs in (G2a).
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CompatibilityPanel } from "@/components/builder/compatibility-panel";
 import { MobileStatusBar } from "@/components/builder/mobile-status-bar";
+import { SavePanel } from "@/components/builder/save-panel";
 import { SlotCard } from "@/components/builder/slot-card";
 import {
   addPart,
@@ -19,6 +20,7 @@ import {
   removePart,
   type BuilderPart,
 } from "@/lib/builder";
+import { clearDraft, loadDraft } from "@/lib/draft";
 import { CATEGORIES } from "@/lib/site";
 import type { ComponentType } from "@/lib/types";
 import { useBuildCheck } from "@/lib/use-build-check";
@@ -27,14 +29,39 @@ export function BuilderApp() {
   const [parts, setParts] = useState<BuilderPart[]>([]);
   // Which slot has its picker open. Only one at a time.
   const [openType, setOpenType] = useState<ComponentType | null>(null);
+  // The name of the build (optional).
+  const [name, setName] = useState("");
+  // null = not saved yet. After the first save: the slug Laravel made.
+  const [savedSlug, setSavedSlug] = useState<string | null>(null);
 
   // ONE check for the whole page. The side panel and the mobile bar both read
   // it, so a change sends one request, not two.
   const check = useBuildCheck(parts);
 
+  // Bring back the build that was kept while the user logged in. It must run
+  // in the browser (sessionStorage), so it cannot be the start value of
+  // useState: the server would render something different (hydration error).
+  // setState is called inside .then(), not in the body of the effect (the
+  // strict lint rule), the same pattern as the other hooks.
+  useEffect(() => {
+    const draft = loadDraft();
+
+    if (draft === null) return;
+
+    void Promise.resolve().then(() => {
+      setParts(draft.parts);
+      setName(draft.name);
+      // Restore only ONCE: delete the draft right away.
+      clearDraft();
+    });
+  }, []);
+
   function clearBuild() {
     setParts([]);
     setOpenType(null);
+    // "Clear" means a new build, so it must not change the saved one.
+    setName("");
+    setSavedSlug(null);
   }
 
   return (
@@ -83,6 +110,13 @@ export function BuilderApp() {
           className="scroll-mt-20 space-y-4 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:p-1"
         >
           <BuildSummary parts={parts} onClear={clearBuild} />
+          <SavePanel
+            parts={parts}
+            name={name}
+            onNameChange={setName}
+            savedSlug={savedSlug}
+            onSlugChange={setSavedSlug}
+          />
           <CompatibilityPanel parts={parts} check={check} />
         </aside>
       </div>
