@@ -9,12 +9,14 @@
 // make sure the data has the right SHAPE and that the slug is safe to put
 // into a URL.
 
+import { revalidatePath } from "next/cache";
 import { serverRequest, type FailedResponse } from "@/lib/api-server";
 import { isValidSlug } from "@/lib/get-component";
 import { getSessionToken } from "@/lib/session";
 import type {
   ApiData,
   ComponentType,
+  DeleteBuildResult,
   MyBuild,
   SaveBuildBody,
   SaveBuildInput,
@@ -49,7 +51,9 @@ function cleanParts(value: unknown): Parts | null {
 }
 
 // Turns an error answer from Laravel into one message for the save panel.
-function failure(response: FailedResponse): SaveBuildResult {
+function failure(
+  response: FailedResponse,
+): Extract<SaveBuildResult, { status: "error" }> {
   if (response.status === 404) {
     return {
       status: "error",
@@ -136,6 +140,10 @@ export async function saveBuildAction(
         });
 
   if (response.ok) {
+    // "My builds" shows the part count and the "Updated" date, so Next.js
+    // must load that page again the next time the user opens it.
+    revalidatePath("/my/builds");
+
     return {
       status: "saved",
       slug: response.data.data.slug,
@@ -147,4 +155,37 @@ export async function saveBuildAction(
   if (response.status === 401) return { status: "needs_login" };
 
   return failure(response);
+}
+
+export async function deleteBuildAction(
+  slug: string,
+): Promise<DeleteBuildResult> {
+  const token = await getSessionToken();
+
+  if (token === null) return { status: "needs_login" };
+
+  // The slug goes into the URL, so it must look like a slug.
+  if (typeof slug !== "string" || !isValidSlug(slug)) {
+    return {
+      status: "error",
+      message: "This build is not valid. Please refresh the page.",
+    };
+  }
+
+  const response = await serverRequest<null>("DELETE", `/my/builds/${slug}`, {
+    token,
+  });
+
+  // 404 means the build is already gone (for example deleted in another tab).
+  // That is what the user wanted, so it counts as deleted.
+  if (response.ok || response.status === 404) {
+    // Makes Next.js load the list again, without the deleted build.
+    revalidatePath("/my/builds");
+
+    return { status: "deleted" };
+  }
+
+  if (response.status === 401) return { status: "needs_login" };
+
+  return { status: "error", message: failure(response).message };
 }

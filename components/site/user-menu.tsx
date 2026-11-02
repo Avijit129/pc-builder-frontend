@@ -6,7 +6,7 @@
 // without JavaScript.
 
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { FolderOpen, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logoutAction } from "@/lib/actions/auth";
 import { getCurrentUser } from "@/lib/auth";
@@ -37,6 +37,14 @@ export async function UserMenu() {
       <span className="hidden max-w-40 truncate text-sm sm:inline">
         {user.name}
       </span>
+
+      {/* On small screens only the icon shows, so aria-label names the link. */}
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/my/builds" aria-label="My builds">
+          <FolderOpen />
+          <span className="hidden sm:inline">My builds</span>
+        </Link>
+      </Button>
 
       <form action={logoutAction}>
         <Button type="submit" variant="outline" size="sm">

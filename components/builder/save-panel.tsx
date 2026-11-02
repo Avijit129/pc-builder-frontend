@@ -52,6 +52,11 @@ export function SavePanel({
 
   const isUpdate = savedSlug !== null;
 
+  // After login the user comes back here: the edit page of the saved build,
+  // or /builder when the build is not saved yet.
+  const loginNext =
+    savedSlug === null ? "/builder" : `/my/builds/${savedSlug}/edit`;
+
   // Every change in the builder makes a NEW parts list, so "parts !== old
   // parts" means the build changed after we saved it. Then "Build saved" would
   // be wrong, so we hide it. An error message stays until the next click.
@@ -80,8 +85,9 @@ export function SavePanel({
         if (result.status === "needs_login") {
           // Keep the build, then go to login. After login Laravel's
           // redirect brings the user back to /builder.
-          saveDraft({ name, parts });
-          router.push(`/login?next=${encodeURIComponent("/builder")}`);
+          // The draft remembers which saved build it belongs to (null = new).
+          saveDraft({ name, parts, slug: savedSlug });
+          router.push(`/login?next=${encodeURIComponent(loginNext)}`);
           return;
         }
 

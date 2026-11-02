@@ -554,3 +554,9 @@ export type SaveBuildResult =
       /** true: the saved build is gone, so the next save must create a new one. */
       notFound?: boolean;
     };
+
+/** What the delete Server Action sends back (see lib/actions/builds.ts). */
+export type DeleteBuildResult =
+  | { status: "deleted" }
+  | { status: "needs_login" }
+  | { status: "error"; message: string };

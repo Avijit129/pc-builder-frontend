@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { apiGet } from "@/lib/api";
-import { SITE_URL } from "@/lib/site";
 import type { ApiData, SitemapEntry } from "@/lib/types";
 import { BUILDER_ENABLED, SITE_URL } from "@/lib/site";
 

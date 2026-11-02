@@ -2,8 +2,13 @@
 
 // components/builder/builder-app.tsx
 // The whole PC Builder. It keeps the list of chosen parts in React state and
-// gives each slot card what it needs. A refresh starts a new build. The only
-// thing we keep is a draft in sessionStorage while the user logs in (G2a).
+// gives each slot card what it needs. A refresh starts the build again from
+// the start values. The only thing we keep is a draft in sessionStorage while
+// the user logs in (G2a).
+//
+// Two ways to use it:
+// - /builder: no props, an empty new build.
+// - /my/builds/[slug]/edit (G2c): start values from a saved build.
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,14 +30,29 @@ import { CATEGORIES } from "@/lib/site";
 import type { ComponentType } from "@/lib/types";
 import { useBuildCheck } from "@/lib/use-build-check";
 
-export function BuilderApp() {
-  const [parts, setParts] = useState<BuilderPart[]>([]);
+type Props = {
+  /** Start values when you edit a saved build. Leave them out for a new build. */
+  initialParts?: BuilderPart[];
+  initialName?: string;
+  /** The slug of the saved build. null = a new build that is not saved yet. */
+  initialSlug?: string | null;
+};
+
+// One shared empty list, so the default value is always the same object.
+const NO_PARTS: BuilderPart[] = [];
+
+export function BuilderApp({
+  initialParts = NO_PARTS,
+  initialName = "",
+  initialSlug = null,
+}: Props) {
+  const [parts, setParts] = useState<BuilderPart[]>(initialParts);
   // Which slot has its picker open. Only one at a time.
   const [openType, setOpenType] = useState<ComponentType | null>(null);
   // The name of the build (optional).
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   // null = not saved yet. After the first save: the slug Laravel made.
-  const [savedSlug, setSavedSlug] = useState<string | null>(null);
+  const [savedSlug, setSavedSlug] = useState<string | null>(initialSlug);
 
   // ONE check for the whole page. The side panel and the mobile bar both read
   // it, so a change sends one request, not two.
@@ -43,10 +63,14 @@ export function BuilderApp() {
   // useState: the server would render something different (hydration error).
   // setState is called inside .then(), not in the body of the effect (the
   // strict lint rule), the same pattern as the other hooks.
+  //
+  // A draft belongs to ONE build: a new one (slug null) or one saved build.
+  // We only use it on the page of that build. So an old draft of a new build
+  // can never replace the build you are editing.
   useEffect(() => {
     const draft = loadDraft();
 
-    if (draft === null) return;
+    if (draft === null || draft.slug !== initialSlug) return;
 
     void Promise.resolve().then(() => {
       setParts(draft.parts);
@@ -54,14 +78,19 @@ export function BuilderApp() {
       // Restore only ONCE: delete the draft right away.
       clearDraft();
     });
-  }, []);
+  }, [initialSlug]);
 
   function clearBuild() {
     setParts([]);
     setOpenType(null);
-    // "Clear" means a new build, so it must not change the saved one.
-    setName("");
-    setSavedSlug(null);
+
+    // On /builder, "clear" means a new build, so it must not change the saved
+    // one. When you edit a saved build, we keep its name and slug, so the
+    // button "Update build" still changes that same build.
+    if (initialSlug === null) {
+      setName("");
+      setSavedSlug(null);
+    }
   }
 
   return (

@@ -16,7 +16,12 @@ import type { ComponentType } from "@/lib/types";
 
 const KEY = "pc_builder_draft";
 
-export type Draft = { name: string; parts: BuilderPart[] };
+export type Draft = {
+  name: string;
+  parts: BuilderPart[];
+  /** The saved build this draft belongs to. null = a new build. */
+  slug: string | null;
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -106,6 +111,7 @@ export function loadDraft(): Draft | null {
   return {
     name: typeof data.name === "string" ? data.name.slice(0, 100) : "",
     parts,
+    slug: typeof data.slug === "string" ? data.slug : null,
   };
 }
 
