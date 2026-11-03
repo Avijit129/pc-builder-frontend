@@ -15,6 +15,7 @@ import {
 } from "@/lib/list-params";
 import type { Category } from "@/lib/site";
 import type { Brand, ListItem, Paginated } from "@/lib/types";
+import { CompareTray } from "@/components/compare/compare-tray";
 
 type Props = {
   category: Category;
@@ -138,6 +139,9 @@ export async function CategoryListing({
           currentSlug={brand?.slug}
         />
       )}
+
+      {/* Hidden until the visitor chooses a part. */}
+      <CompareTray segment={category.segment} label={category.label} />
     </>
   );
 }
