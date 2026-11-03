@@ -560,3 +560,9 @@ export type DeleteBuildResult =
   | { status: "deleted" }
   | { status: "needs_login" }
   | { status: "error"; message: string };
+
+/** What the visibility Server Action sends back (see lib/actions/builds.ts). */
+export type VisibilityResult =
+  | { status: "updated" }
+  | { status: "needs_login" }
+  | { status: "error"; message: string };

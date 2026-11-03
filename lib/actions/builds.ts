@@ -21,6 +21,7 @@ import type {
   SaveBuildBody,
   SaveBuildInput,
   SaveBuildResult,
+  VisibilityResult,
 } from "@/lib/types";
 
 type Parts = NonNullable<SaveBuildBody["parts"]>;
@@ -186,6 +187,63 @@ export async function deleteBuildAction(
   }
 
   if (response.status === 401) return { status: "needs_login" };
+
+  return { status: "error", message: failure(response).message };
+}
+
+export async function setBuildVisibilityAction(
+  slug: string,
+  isPublic: boolean,
+): Promise<VisibilityResult> {
+  const token = await getSessionToken();
+
+  if (token === null) return { status: "needs_login" };
+
+  // A Server Action can be called by anyone, so we check the input first.
+  // The slug goes into the URL, so it must look like a slug.
+  if (
+    typeof slug !== "string" ||
+    !isValidSlug(slug) ||
+    typeof isPublic !== "boolean"
+  ) {
+    return {
+      status: "error",
+      message: "This build is not valid. Please refresh the page.",
+    };
+  }
+
+  // Only is_public. On a PATCH, the name and the parts stay as they are
+  // (API reference, section 9: "Send only what changes").
+  const body: SaveBuildBody = { is_public: isPublic };
+
+  const response = await serverRequest<ApiData<MyBuild>>(
+    "PATCH",
+    `/my/builds/${slug}`,
+    { body, token },
+  );
+
+  if (response.ok) {
+    // Load the list again, so the badge and the share link are right.
+    revalidatePath("/my/builds");
+    // The public page is cached. This asks Next.js to load it again, so it
+    // shows (or hides) the build soon. Laravel is still the real gate: a
+    // private build always answers 404.
+    revalidatePath(`/builds/${slug}`);
+
+    return { status: "updated" };
+  }
+
+  if (response.status === 401) return { status: "needs_login" };
+
+  if (response.status === 404) {
+    // The build is gone (for example deleted in another tab).
+    revalidatePath("/my/builds");
+
+    return {
+      status: "error",
+      message: "This build no longer exists. The list was updated.",
+    };
+  }
 
   return { status: "error", message: failure(response).message };
 }

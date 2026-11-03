@@ -9,6 +9,7 @@
 //   login page. After login, BuilderApp brings the build back.
 
 import { useId, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -163,10 +164,15 @@ export function SavePanel({
       {/* A live region: screen readers say the message when it appears. */}
       <div role="status">
         {shown?.kind === "success" && (
-          <p className="mt-3 rounded-lg border p-3 text-sm">{shown.text}</p>
+          <p className="mt-3 rounded-lg border p-3 text-sm">
+            {shown.text}{" "}
+            <Link href="/my/builds" className="underline underline-offset-4">
+              Open My builds
+            </Link>{" "}
+            to change who can see it and to get the share link.
+          </p>
         )}
       </div>
-
       {shown?.kind === "error" && (
         <p
           role="alert"

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Globe, Lock, Pencil, Plus } from "lucide-react";
 import { DeleteBuildButton } from "@/components/builds/delete-build-button";
+import { VisibilityControls } from "@/components/builds/visibility-controls";
 import { Pagination } from "@/components/catalog/pagination";
 import { Button } from "@/components/ui/button";
 import { serverRequest } from "@/lib/api-server";
@@ -14,6 +15,7 @@ import {
   type RawSearchParams,
 } from "@/lib/list-params";
 import { getSessionToken } from "@/lib/session";
+import { SITE_URL } from "@/lib/site";
 import type { MyBuild, Paginated } from "@/lib/types";
 
 type Props = {
@@ -152,47 +154,61 @@ function BuildRow({ build }: { build: MyBuild }) {
   const updated = formatDate(build.updated_at);
   const parts = build.parts_count;
 
+  // public_path is null while the build is private. The full address is built
+  // here on the server, from the site address (NEXT_PUBLIC_SITE_URL).
+  const shareUrl = build.public_path
+    ? new URL(build.public_path, SITE_URL).toString()
+    : null;
+
   return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="break-words font-medium">{label}</h2>
-          <VisibilityBadge isPublic={build.is_public} />
+    <div className="rounded-xl border bg-card p-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="break-words font-medium">{label}</h2>
+            <VisibilityBadge isPublic={build.is_public} />
+          </div>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {typeof parts === "number" &&
+              `${parts} ${parts === 1 ? "part" : "parts"}`}
+            {typeof parts === "number" && updated && " · "}
+            {updated && (
+              <>
+                Updated <time dateTime={build.updated_at}>{updated}</time>
+              </>
+            )}
+          </p>
         </div>
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          {typeof parts === "number" &&
-            `${parts} ${parts === 1 ? "part" : "parts"}`}
-          {typeof parts === "number" && updated && " · "}
-          {updated && (
-            <>
-              Updated <time dateTime={build.updated_at}>{updated}</time>
-            </>
-          )}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {/* aria-label: a page can have many "Edit" links, so each one needs its own name. */}
-        <Button asChild variant="outline" size="sm">
-          <Link
-            href={`/my/builds/${build.slug}/edit`}
-            aria-label={`Edit ${label}`}
-          >
-            <Pencil />
-            Edit
-          </Link>
-        </Button>
-
-        {/* public_path is null while the build is private. */}
-        {build.public_path && (
+        <div className="flex flex-wrap items-center gap-2">
+          {/* aria-label: a page can have many "Edit" links, so each one needs its own name. */}
           <Button asChild variant="outline" size="sm">
-            <Link href={build.public_path}>View public page</Link>
+            <Link
+              href={`/my/builds/${build.slug}/edit`}
+              aria-label={`Edit ${label}`}
+            >
+              <Pencil />
+              Edit
+            </Link>
           </Button>
-        )}
 
-        <DeleteBuildButton slug={build.slug} label={label} />
+          {build.public_path && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={build.public_path}>View public page</Link>
+            </Button>
+          )}
+
+          <DeleteBuildButton slug={build.slug} label={label} />
+        </div>
       </div>
+
+      <VisibilityControls
+        slug={build.slug}
+        label={label}
+        isPublic={build.is_public}
+        shareUrl={shareUrl}
+      />
     </div>
   );
 }
@@ -216,7 +232,7 @@ function BuildsSkeleton() {
       {Array.from({ length: 3 }, (_, index) => (
         <div
           key={index}
-          className="h-24 animate-pulse rounded-xl border bg-muted/50"
+          className="h-32 animate-pulse rounded-xl border bg-muted/50"
         />
       ))}
     </div>
