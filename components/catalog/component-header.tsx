@@ -1,11 +1,17 @@
+import Link from "next/link";
+import { Scale } from "lucide-react";
 import {
   ZoomGallery,
   type GalleryImage,
 } from "@/components/catalog/zoom-gallery";
+import { Button } from "@/components/ui/button";
+import { compareHref } from "@/lib/compare-url";
 import { formatPrice } from "@/lib/format";
+import type { Category } from "@/lib/site";
 import type { ComponentDetail } from "@/lib/types";
 
 type Props = {
+  category: Category;
   component: ComponentDetail;
 };
 
@@ -26,9 +32,8 @@ function galleryImages(component: ComponentDetail): GalleryImage[] {
 }
 
 // The top part of a component page: the picture gallery with zoom on the left,
-// the main facts on the right. Specs, prices and features come in the next
-// steps (B2 and B3).
-export function ComponentHeader({ component }: Props) {
+// the main facts on the right. Specs, prices and features come below.
+export function ComponentHeader({ category, component }: Props) {
   const price = formatPrice(component.lowest_price);
 
   // Show series and model only when they exist (unknown = leave it out).
@@ -73,6 +78,19 @@ export function ComponentHeader({ component }: Props) {
               )}
             </p>
           </div>
+
+          {/* rel="nofollow": every part has its own compare address, and
+              search engines do not need to crawl thousands of them. The
+              compare pages are noindex anyway. */}
+          <Button asChild variant="outline" className="mt-4">
+            <Link
+              href={compareHref(category.segment, [component.slug])}
+              rel="nofollow"
+            >
+              <Scale />
+              Compare with other {category.label}
+            </Link>
+          </Button>
         </div>
       </ZoomGallery>
     </div>

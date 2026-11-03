@@ -130,7 +130,7 @@ async function ComponentPageContent({ params }: Props) {
 
       <Breadcrumbs items={component.seo.breadcrumbs} />
 
-      <ComponentHeader component={component} />
+      <ComponentHeader category={category} component={component} />
 
       <div className="mt-12 space-y-12">
         <PriceOffers offers={component.prices} />

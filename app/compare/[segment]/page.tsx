@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AddPart } from "@/components/compare/add-part";
 import { CompareTable } from "@/components/compare/compare-table";
 import { Breadcrumbs } from "@/components/catalog/breadcrumbs";
-import { buildCompareSections, parseCompareSlugs } from "@/lib/compare";
+import { Button } from "@/components/ui/button";
+import {
+  buildCompareSections,
+  onlyDifferences,
+  parseCompareSlugs,
+  parseDiffOnly,
+} from "@/lib/compare";
+import { compareHref } from "@/lib/compare-url";
 import { getComponent } from "@/lib/get-component";
 import type { RawSearchParams } from "@/lib/list-params";
 import { CATEGORIES, SITE_URL, getCategoryBySegment } from "@/lib/site";
@@ -62,7 +70,10 @@ async function CompareContent({ params, searchParams }: Props) {
 
   if (!category) notFound();
 
-  const slugs = parseCompareSlugs(await searchParams);
+  const rawParams = await searchParams;
+  const slugs = parseCompareSlugs(rawParams);
+  // ?diff=1 in the URL. The page keeps it in every link it writes.
+  const diffOnly = parseDiffOnly(rawParams);
 
   // One call per part. They run at the same time, and every answer is cached.
   // getComponent returns null for an unknown slug and throws for other errors
@@ -84,6 +95,19 @@ async function CompareContent({ params, searchParams }: Props) {
     return true;
   });
 
+  // The slugs of the parts that are really on the page. Links use these, so a
+  // slug that was not found never stays in the URL.
+  const shownSlugs = components.map((component) => component.slug);
+
+  // With fewer than 2 parts there is nothing to compare, so "differences
+  // only" does nothing (and its switch is hidden).
+  const filterRows = diffOnly && components.length > 1;
+
+  const allSections = buildCompareSections(
+    components.map((component) => component.specs),
+  );
+  const sections = filterRows ? onlyDifferences(allSections) : allSections;
+
   const crumbs: Seo["breadcrumbs"] = [
     { name: "Home", path: "/", url: absoluteUrl("/") },
     {
@@ -97,10 +121,6 @@ async function CompareContent({ params, searchParams }: Props) {
       url: absoluteUrl(`/compare/${category.segment}`),
     },
   ];
-
-  const sections = buildCompareSections(
-    components.map((component) => component.specs),
-  );
 
   return (
     <>
@@ -127,9 +147,12 @@ async function CompareContent({ params, searchParams }: Props) {
       <div className="mt-6">
         <AddPart
           segment={category.segment}
-          slugs={components.map((component) => component.slug)}
+          slugs={shownSlugs}
           ids={components.map((component) => component.id)}
-          startOpen={components.length === 0}
+          // Open until there are 2 parts, so a visitor who comes from a part
+          // page can choose the second part right away.
+          startOpen={components.length < 2}
+          diffOnly={diffOnly}
         />
       </div>
 
@@ -141,11 +164,41 @@ async function CompareContent({ params, searchParams }: Props) {
 
       {components.length > 0 && (
         <div className="mt-6">
+          {components.length > 1 && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                {filterRows
+                  ? "Showing only the specs that are different."
+                  : "Showing all specs."}
+              </p>
+
+              {/* A normal link: the URL is the state. scroll={false} keeps
+                  the page where it is. */}
+              <Button asChild variant="outline" size="sm">
+                <Link
+                  href={compareHref(category.segment, shownSlugs, {
+                    diffOnly: !filterRows,
+                  })}
+                  scroll={false}
+                >
+                  {filterRows ? "Show all specs" : "Show differences only"}
+                </Link>
+              </Button>
+            </div>
+          )}
+
           <CompareTable
             category={category}
             components={components}
             sections={sections}
+            diffOnly={diffOnly}
           />
+
+          {filterRows && sections.length === 0 && (
+            <p className="mt-3 rounded-lg border p-3 text-sm">
+              These parts have the same value in every spec we show.
+            </p>
+          )}
 
           <p className="mt-3 text-xs text-muted-foreground">
             Specs and prices can change. Check the shop before you buy.

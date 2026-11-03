@@ -25,9 +25,17 @@ type Props = {
   ids: number[];
   /** Open at the start. The page does this when nothing is chosen yet. */
   startOpen?: boolean;
+  /** Kept in the new address, so the "differences only" switch stays on. */
+  diffOnly?: boolean;
 };
 
-export function AddPart({ segment, slugs, ids, startOpen = false }: Props) {
+export function AddPart({
+  segment,
+  slugs,
+  ids,
+  startOpen = false,
+  diffOnly = false,
+}: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(startOpen);
   const category = getCategoryBySegment(segment);
@@ -79,7 +87,9 @@ export function AddPart({ segment, slugs, ids, startOpen = false }: Props) {
             selectedIds={ids}
             onPick={(item) => {
               setOpen(false);
-              router.push(compareHref(segment, [...slugs, item.slug]));
+              router.push(
+                compareHref(segment, [...slugs, item.slug], { diffOnly }),
+              );
             }}
           />
         </div>

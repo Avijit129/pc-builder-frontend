@@ -96,3 +96,28 @@ export function buildCompareSections(specsList: Specs[]): CompareSection[] {
     })),
   }));
 }
+
+/** True when the URL has ?diff=1 ("show differences only"). */
+export function parseDiffOnly(raw: RawSearchParams): boolean {
+  // ?diff=1&diff=0 gives an array. We only use the first value.
+  const value = Array.isArray(raw.diff) ? raw.diff[0] : raw.diff;
+
+  return value === "1";
+}
+
+/**
+ * Keeps only the rows where the parts are different: the cells do not all
+ * have the same text. "Unknown" is a text too, so a spec that one part has and
+ * another part does not have stays in the table. A group with no rows left is
+ * removed.
+ */
+export function onlyDifferences(sections: CompareSection[]): CompareSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      rows: section.rows.filter(
+        (row) => new Set(row.cells.map((cell) => cell.value)).size > 1,
+      ),
+    }))
+    .filter((section) => section.rows.length > 0);
+}

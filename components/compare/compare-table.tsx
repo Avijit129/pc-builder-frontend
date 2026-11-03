@@ -23,9 +23,16 @@ type Props = {
   category: Category;
   components: ComponentDetail[];
   sections: CompareSection[];
+  /** Kept in the Remove links, so the "differences only" switch stays on. */
+  diffOnly: boolean;
 };
 
-export function CompareTable({ category, components, sections }: Props) {
+export function CompareTable({
+  category,
+  components,
+  sections,
+  diffOnly,
+}: Props) {
   const slugs = components.map((component) => component.slug);
 
   return (
@@ -55,6 +62,7 @@ export function CompareTable({ category, components, sections }: Props) {
                 removeHref={compareHref(
                   category.segment,
                   slugs.filter((slug) => slug !== component.slug),
+                  { diffOnly },
                 )}
               />
             ))}

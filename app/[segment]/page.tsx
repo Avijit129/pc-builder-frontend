@@ -7,6 +7,10 @@ import { ListSkeleton } from "@/components/catalog/list-skeleton";
 import type { RawSearchParams } from "@/lib/list-params";
 import { CATEGORIES, getCategoryBySegment } from "@/lib/site";
 
+import { Scale } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { compareHref } from "@/lib/compare-url";
+
 type Props = {
   params: Promise<{ segment: string }>;
   searchParams: Promise<RawSearchParams>;
@@ -70,6 +74,13 @@ async function CategoryPageContent({ params, searchParams }: Props) {
         {category.label}
       </h1>
       <p className="mt-2 text-muted-foreground">{category.description}</p>
+
+      <Button asChild variant="outline" size="sm" className="mt-4">
+        <Link href={compareHref(category.segment, [])}>
+          <Scale />
+          Compare {category.label}
+        </Link>
+      </Button>
 
       <div className="mt-6">
         <Suspense fallback={<ListSkeleton />}>
