@@ -14,6 +14,11 @@ import { getComponent } from "@/lib/get-component";
 import { CATEGORIES, getCategoryBySegment } from "@/lib/site";
 import type { ListItem, Paginated } from "@/lib/types";
 
+import {
+  PriceHistorySection,
+  PriceHistorySkeleton,
+} from "@/components/catalog/price-history";
+
 type Props = {
   params: Promise<{ segment: string; manufacturer: string; slug: string }>;
 };
@@ -134,6 +139,11 @@ async function ComponentPageContent({ params }: Props) {
 
       <div className="mt-12 space-y-12">
         <PriceOffers offers={component.prices} />
+        {/* Its own Suspense: the chart loads on its own and never blocks the
+            page. */}
+        <Suspense fallback={<PriceHistorySkeleton />}>
+          <PriceHistorySection category={category} slug={component.slug} />
+        </Suspense>
         <SpecTables specs={component.specs} />
         <TypeExtras category={category} component={component} />
         <FeatureList features={component.features} />

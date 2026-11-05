@@ -566,3 +566,28 @@ export type VisibilityResult =
   | { status: "updated" }
   | { status: "needs_login" }
   | { status: "error"; message: string };
+
+/* -------------------------------------------------------------------------- */
+/* Price history (section 4b of the API reference)                            */
+/* -------------------------------------------------------------------------- */
+
+export type PricePoint = {
+  /** YYYY-MM-DD */
+  date: string;
+  /** The cheapest IN-STOCK price of that day. null = no shop had it in stock. */
+  lowest_price: number | null;
+};
+
+/** Answer of GET /api/{type}/{slug}/price-history (inside { data }). */
+export type PriceHistory = {
+  currency: "USD";
+  /** The days that were asked for. */
+  days: number;
+  /** Oldest first, one per day. Days before the first record are left out. */
+  points: PricePoint[];
+  summary: {
+    latest: number | null;
+    lowest: number | null;
+    highest: number | null;
+  };
+};
