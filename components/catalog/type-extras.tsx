@@ -8,7 +8,7 @@
 
 import type { ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
-import { formatDate, formatNumber, humanize } from "@/lib/format";
+import { formatDate, formatNumber, humanize, safeHttpUrl } from "@/lib/format";
 import type { Category } from "@/lib/site";
 import type {
   CaseFanMount,
@@ -34,13 +34,6 @@ type Props = {
 // If the API did not send the list, we show nothing instead of crashing.
 function asList<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : [];
-}
-
-// Only normal web links become clickable. "javascript:..." never does.
-function safeHttpUrl(url: string | null | undefined): string | null {
-  return typeof url === "string" && /^https?:\/\//i.test(url.trim())
-    ? url.trim()
-    : null;
 }
 
 function Unknown() {

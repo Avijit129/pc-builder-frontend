@@ -1,6 +1,6 @@
 import { Check, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, safeHttpUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Offer } from "@/lib/types";
 
@@ -23,12 +23,6 @@ function formatCheckedAt(iso: string | null): string | null {
   const date = new Date(iso);
 
   return Number.isNaN(date.getTime()) ? null : dateFormatter.format(date);
-}
-
-// The link comes from the database. Only normal web links get a button, so a
-// wrong value like "javascript:..." can never become a clickable link.
-function safeBuyUrl(url: string | null): string | null {
-  return url !== null && /^https?:\/\//i.test(url.trim()) ? url.trim() : null;
 }
 
 // The "Prices" part of a component page: one row per shop, with the Buy button.

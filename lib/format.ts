@@ -81,3 +81,16 @@ export function formatDate(iso: string | null | undefined): string | null {
 
   return Number.isNaN(date.getTime()) ? null : dateFormatter.format(date);
 }
+
+/**
+ * A trimmed link, but only when it starts with http:// or https://.
+ * Links come from the database, so a wrong value like "javascript:..." must
+ * never become a clickable link. Returns null when the link is not safe.
+ */
+export function safeHttpUrl(url: string | null | undefined): string | null {
+  if (typeof url !== "string") return null;
+
+  const trimmed = url.trim();
+
+  return /^https?:\/\//i.test(trimmed) ? trimmed : null;
+}

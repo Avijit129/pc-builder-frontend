@@ -10,12 +10,9 @@
 
 import { MAX_COMPARE } from "@/lib/compare-url";
 import { CATEGORIES } from "@/lib/site";
+import { isValidSlug } from "@/lib/slug";
 
 const KEY = "pc_builder_compare";
-
-// The same rule as isValidSlug in lib/get-component.ts. We cannot import that
-// file here: it uses "use cache", which only works on the server.
-const SLUG = /^[A-Za-z0-9_-]{1,200}$/;
 
 type Tray = Record<string, string[]>;
 

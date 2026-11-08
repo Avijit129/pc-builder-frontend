@@ -15,6 +15,7 @@ import {
 import { STATUS_LABELS } from "@/lib/compatibility";
 import { cn } from "@/lib/utils";
 import type { CompatibilityCheck, CompatibilityStatus } from "@/lib/types";
+import { safeHttpUrl } from "@/lib/format";
 
 // "unknown" is grey on purpose: it must never look like a pass.
 const STATUS_STYLE: Record<
@@ -46,14 +47,6 @@ export function StatusIcon({
       aria-hidden="true"
     />
   );
-}
-
-// Only normal web links become clickable. (The same helper exists in
-// type-extras.tsx. We can move both to lib/format.ts later.)
-function safeHttpUrl(url: string | null | undefined): string | null {
-  return typeof url === "string" && /^https?:\/\//i.test(url.trim())
-    ? url.trim()
-    : null;
 }
 
 type Props = {

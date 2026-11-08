@@ -4,14 +4,13 @@
 // section 4).
 
 import { ApiError, apiGet } from "@/lib/api";
+import { isValidSlug } from "@/lib/slug";
 import type { Category } from "@/lib/site";
 import type { ApiData, ComponentDetail } from "@/lib/types";
 
-// A slug is letters, numbers, dash and underscore. Checking this BEFORE we
-// call Laravel also stops odd values like ".." from changing the API address.
-export function isValidSlug(value: string): boolean {
-  return /^[A-Za-z0-9_-]{1,200}$/.test(value);
-}
+// The rule now lives in lib/slug.ts. Five server files still import
+// isValidSlug from here, so we pass it on. They keep working unchanged.
+export { isValidSlug };
 
 /**
  * Returns the component, or null when it does not exist (Laravel answers 404
