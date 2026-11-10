@@ -591,3 +591,54 @@ export type PriceHistory = {
     highest: number | null;
   };
 };
+
+/* -------------------------------------------------------------------------- */
+/* Guides (section 5b of the API reference)                                   */
+/* -------------------------------------------------------------------------- */
+
+export type GuideListItem = {
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  image: string | null;
+  /** ISO 8601 */
+  published_at: string;
+  /** For example /guides/best-cpu-for-gaming */
+  path: string;
+};
+
+export type GuideSection = {
+  heading: string;
+  /** The anchor, for example #best-for-gaming */
+  slug: string;
+  /** Plain text paragraphs. Never render them as HTML. */
+  paragraphs: string[];
+};
+
+export type GuidePick = {
+  /** For example "Best overall". */
+  label: string | null;
+  /** Why this part. Paragraphs. */
+  blurb: string[];
+  type: ComponentType;
+  /** Website page of this part. */
+  path: string;
+  /** Same as a list item. lowest_price is the LIVE price. */
+  component: ListItem<Record<string, unknown>>;
+  /** The cheapest in-stock offer. null when nothing is in stock. */
+  offer: Offer | null;
+};
+
+export type GuidePage = {
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  intro: string[];
+  image: string | null;
+  published_at: string;
+  updated_at: string | null;
+  path: string;
+  sections: GuideSection[];
+  picks: GuidePick[];
+  seo: Seo;
+};

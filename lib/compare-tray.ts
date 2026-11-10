@@ -78,7 +78,8 @@ export function parseTray(raw: string): Tray {
     if (!Array.isArray(value)) continue;
 
     const slugs = value.filter(
-      (slug): slug is string => typeof slug === "string" && SLUG.test(slug),
+      (slug): slug is string =>
+        typeof slug === "string" && isValidSlug(slug),
     );
     const unique = [...new Set(slugs)].slice(0, MAX_COMPARE);
 
@@ -114,7 +115,7 @@ function save(tray: Tray): void {
 
 /** Add the part, or remove it when it is already chosen. */
 export function toggleSlug(segment: string, slug: string): void {
-  if (!SLUG.test(slug)) return;
+  if (!isValidSlug(slug)) return;
 
   const tray = parseTray(getSnapshot());
   const current = tray[segment] ?? [];

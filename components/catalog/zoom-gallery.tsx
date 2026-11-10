@@ -179,15 +179,17 @@ export function ZoomGallery({ images, children }: Props) {
               {zoom && (
                 // pointer-events-none: the lens must never catch the mouse,
                 // or the zoom would flicker on and off.
-                <div
+                <img
+                  src="/lense.gif"
                   aria-hidden="true"
-                  className="pointer-events-none absolute border border-foreground/40 bg-background/30"
+                  className="pointer-events-none absolute"
                   style={{
                     left: zoom.lens.left,
                     top: zoom.lens.top,
                     width: zoom.lens.width,
                     height: zoom.lens.height,
                   }}
+                  alt="lense"
                 />
               )}
             </>

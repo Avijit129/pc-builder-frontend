@@ -76,7 +76,7 @@ export function PriceOffers({ offers }: Props) {
 
 function OfferRow({ offer, isLowest }: { offer: Offer; isLowest: boolean }) {
   const shop = offer.retailer?.name ?? null;
-  const buyUrl = safeBuyUrl(offer.buy_url);
+  const buyUrl = safeHttpUrl(offer.buy_url);
   const checkedAt = formatCheckedAt(offer.checked_at);
 
   const stockLabel = offer.in_stock ? "In stock" : "Out of stock";

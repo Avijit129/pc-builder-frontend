@@ -40,6 +40,15 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
+/** ?page=abc or ?page=0 is not valid, so it becomes page 1. */
+export function parsePage(raw: RawSearchParams): number {
+  const pageNumber = Number.parseInt(first(raw.page), 10);
+
+  return Number.isInteger(pageNumber) && pageNumber >= 1
+    ? Math.min(pageNumber, 10000)
+    : 1;
+}
+
 // A brand slug is letters, numbers, dash and underscore (for example "msi").
 // Laravel allows at most 100 characters.
 function cleanManufacturer(value: string): string {
@@ -81,11 +90,7 @@ export function parseListParams(
     SORT_OPTIONS.find((option) => option.value === sortValue)?.value ??
     DEFAULT_SORT;
 
-  const pageNumber = Number.parseInt(first(raw.page), 10);
-  const page =
-    Number.isInteger(pageNumber) && pageNumber >= 1
-      ? Math.min(pageNumber, 10000)
-      : 1;
+  const page = parsePage(raw);
 
   const manufacturer = cleanManufacturer(first(raw.manufacturer));
 
