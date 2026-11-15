@@ -65,12 +65,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // If Laravel is down this throws. That is on purpose: a failed sitemap is
   // better than a sitemap with only the homepage, which would tell Google that
   // all other pages are gone.
-  const [listings, components] = await Promise.all([
+  const [listings, components, guides] = await Promise.all([
     apiGet<ApiData<SitemapEntry[]>>("/sitemap/listings"),
     apiGet<ApiData<SitemapEntry[]>>("/sitemap/components"),
+    apiGet<ApiData<SitemapEntry[]>>("/sitemap/guides"),
   ]);
 
-  const fromLaravel = [...listings.data, ...components.data];
+  const fromLaravel = [...listings.data, ...components.data, ...guides.data];
 
   warnIfWrongHost(fromLaravel);
 

@@ -9,7 +9,14 @@ import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import type { GuideListItem } from "@/lib/types";
 
-export function GuideCard({ guide }: { guide: GuideListItem }) {
+export function GuideCard({
+  guide,
+  as: Heading = "h2",
+}: {
+  guide: GuideListItem;
+  /** Use "h3" when the card sits under an h2 (for example on the homepage). */
+  as?: "h2" | "h3";
+}) {
   const published = formatDate(guide.published_at);
 
   return (
@@ -30,7 +37,7 @@ export function GuideCard({ guide }: { guide: GuideListItem }) {
       )}
 
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h2 className="font-medium leading-snug">{guide.title}</h2>
+        <Heading className="font-medium leading-snug">{guide.title}</Heading>
 
         {guide.excerpt && (
           <p className="line-clamp-3 text-sm text-muted-foreground">

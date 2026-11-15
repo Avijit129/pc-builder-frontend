@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { BookOpen, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BUILDER_ENABLED, CATEGORIES } from "@/lib/site";
 
@@ -44,6 +44,16 @@ export function MobileNav() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                href="/guides"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-muted"
+              >
+                <BookOpen className="size-4" aria-hidden="true" />
+                Buying guides
+              </Link>
+            </li>
 
             {/* Hidden until the /builder page exists (see BUILDER_ENABLED in lib/site.ts). */}
             {BUILDER_ENABLED && (

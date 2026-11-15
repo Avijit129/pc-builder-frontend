@@ -25,6 +25,9 @@ export function Header() {
               <Link href={`/${category.segment}`}>{category.label}</Link>
             </Button>
           ))}
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/guides">Guides</Link>
+          </Button>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">

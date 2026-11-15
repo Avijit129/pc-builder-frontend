@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ListChecks, ShieldCheck, Tag } from "lucide-react";
 import { JsonLd } from "@/components/catalog/json-ld";
+import { LatestGuides } from "@/components/guides/latest-guides";
 import { Button } from "@/components/ui/button";
 import {
   BUILDER_ENABLED,
@@ -138,6 +140,10 @@ export default function Home() {
           </ul>
         </div>
       </section>
+      {/* Draws nothing when there are no guides (see latest-guides.tsx). */}
+      <Suspense fallback={null}>
+        <LatestGuides />
+      </Suspense>
     </>
   );
 }

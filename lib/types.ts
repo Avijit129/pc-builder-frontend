@@ -349,7 +349,7 @@ export type BrandList = {
 };
 
 export type SitemapEntry = {
-  /** Components: the type key. Listings: "category" or "brand". */
+  /** Components: the type key. Listings: "category" or "brand". Guides: "guide_list" or "guide". */
   type: string;
   /** For example /cpu/amd/ryzen-7-7800x3d */
   path: string;
