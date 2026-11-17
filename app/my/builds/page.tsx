@@ -11,6 +11,7 @@ import { serverRequest } from "@/lib/api-server";
 import { formatDate } from "@/lib/format";
 import {
   DEFAULT_SORT,
+  parsePage,
   type ListParams,
   type RawSearchParams,
 } from "@/lib/list-params";
@@ -42,14 +43,6 @@ const NO_FILTERS: ListParams = {
   manufacturer: "",
   filters: {},
 };
-
-// ?page=abc or ?page=0 is not valid, so it becomes page 1.
-function parsePage(raw: RawSearchParams): number {
-  const value = Array.isArray(raw.page) ? raw.page[0] : raw.page;
-  const number = Number.parseInt(value ?? "", 10);
-
-  return Number.isInteger(number) && number >= 1 ? Math.min(number, 10000) : 1;
-}
 
 export default function MyBuildsPage({ searchParams }: Props) {
   return (

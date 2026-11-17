@@ -148,6 +148,7 @@ function PickCard({ pick }: { pick: GuidePick }) {
               url={offer.buy_url}
               isAffiliate={offer.is_affiliate}
               label={shop ? `Buy at ${shop}` : "Buy now"}
+              partName={component.name}
             />
           )}
 

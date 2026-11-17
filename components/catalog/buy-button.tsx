@@ -17,6 +17,12 @@ type Props = {
   /** For example "Buy at Test Shop". */
   label: string;
   variant?: "default" | "outline";
+  /**
+   * The name of the part. Only screen readers read it. A guide has many Buy
+   * buttons, and this makes every link name different:
+   * "Buy at Test Shop for Ryzen 7 (opens in a new tab)".
+   */
+  partName?: string;
 };
 
 export function BuyButton({
@@ -24,6 +30,7 @@ export function BuyButton({
   isAffiliate,
   label,
   variant = "default",
+  partName,
 }: Props) {
   const href = safeHttpUrl(url);
 
@@ -39,6 +46,7 @@ export function BuyButton({
         rel={isAffiliate ? "sponsored noopener" : "nofollow noopener"}
       >
         {label}
+        {partName && <span className="sr-only"> for {partName}</span>}
         <ExternalLink aria-hidden="true" />
         <span className="sr-only">(opens in a new tab)</span>
       </a>

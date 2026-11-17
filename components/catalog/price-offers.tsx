@@ -1,6 +1,6 @@
-import { Check, ExternalLink, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { formatMoney, safeHttpUrl } from "@/lib/format";
+import { Check, X } from "lucide-react";
+import { BuyButton } from "@/components/catalog/buy-button";
+import { formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Offer } from "@/lib/types";
 
@@ -76,7 +76,6 @@ export function PriceOffers({ offers }: Props) {
 
 function OfferRow({ offer, isLowest }: { offer: Offer; isLowest: boolean }) {
   const shop = offer.retailer?.name ?? null;
-  const buyUrl = safeHttpUrl(offer.buy_url);
   const checkedAt = formatCheckedAt(offer.checked_at);
 
   const stockLabel = offer.in_stock ? "In stock" : "Out of stock";
@@ -154,25 +153,14 @@ function OfferRow({ offer, isLowest }: { offer: Offer; isLowest: boolean }) {
           {formatMoney(offer.price, offer.currency)}
         </p>
 
-        {buyUrl ? (
-          // An affiliate link is "sponsored". A normal shop link is "nofollow".
-          // Both open in a new tab, and "noopener" protects our page.
-          <Button asChild variant={offer.in_stock ? "default" : "outline"}>
-            <a
-              href={buyUrl}
-              target="_blank"
-              rel={
-                offer.is_affiliate ? "sponsored noopener" : "nofollow noopener"
-              }
-            >
-              {buttonLabel}
-              <ExternalLink aria-hidden="true" />
-              <span className="sr-only">(opens in a new tab)</span>
-            </a>
-          </Button>
-        ) : (
-          <span className="text-sm text-muted-foreground">No link yet</span>
-        )}
+        {/* The rel rule (sponsored / nofollow) and the "No link yet" text
+            live in BuyButton, so they are the same on every page. */}
+        <BuyButton
+          url={offer.buy_url}
+          isAffiliate={offer.is_affiliate}
+          label={buttonLabel}
+          variant={offer.in_stock ? "default" : "outline"}
+        />
       </div>
     </div>
   );
