@@ -9,7 +9,7 @@
 // icon function inside, and a function cannot go from a Server Component to a
 // Client Component.
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,8 @@ export function AddPart({
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(startOpen);
+  // The "Add a part" button. After a pick, focus goes back to it.
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const category = getCategoryBySegment(segment);
 
   if (!category) return null;
@@ -60,12 +62,15 @@ export function AddPart({
           <h2 id="add-part-heading" className="font-medium">
             Add a part
           </h2>
-          <p className="text-sm text-muted-foreground">
+          {/* A live region: a screen reader says the new count when the page
+              has loaded the new table. */}
+          <p role="status" className="text-sm text-muted-foreground">
             {slugs.length} of {MAX_COMPARE} chosen
           </p>
         </div>
 
         <Button
+          ref={toggleRef}
           type="button"
           size="sm"
           variant={open ? "outline" : "default"}
@@ -86,9 +91,18 @@ export function AddPart({
             repeatable={false}
             selectedIds={ids}
             onPick={(item) => {
+              // Focus goes to the button BEFORE the picker is removed.
+              // Otherwise the "Choose" button that has focus disappears, and
+              // focus falls back to the top of the page.
+              toggleRef.current?.focus();
               setOpen(false);
+
+              // scroll: false, so Next.js does not scroll to the top and move
+              // focus again after the new table has loaded. (The same thing
+              // the "Show differences only" link does.)
               router.push(
                 compareHref(segment, [...slugs, item.slug], { diffOnly }),
+                { scroll: false },
               );
             }}
           />
