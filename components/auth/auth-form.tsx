@@ -40,7 +40,16 @@ export function AuthForm({ mode, next }: Props) {
   );
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form
+      action={formAction}
+      className="space-y-4"
+      // The submit button uses aria-disabled, which does not block the Enter
+      // key inside a field. preventDefault() here makes React skip the action,
+      // so a second submit is ignored while the first one runs.
+      onSubmit={(event) => {
+        if (pending) event.preventDefault();
+      }}
+    >
       {/* Tells the action where to go after success. It checks it again. */}
       <input type="hidden" name="next" value={next} />
 
@@ -89,7 +98,11 @@ export function AuthForm({ mode, next }: Props) {
         }
       />
 
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button
+        type="submit"
+        className="w-full"
+        aria-disabled={pending || undefined}
+      >
         {pending
           ? isRegister
             ? "Creating account…"
@@ -182,7 +195,7 @@ function Field({
       )}
 
       {error && (
-        <p id={errorId} className="mt-1 text-sm text-destructive">
+        <p id={errorId} role="alert" className="mt-1 text-sm text-destructive">
           {error}
         </p>
       )}

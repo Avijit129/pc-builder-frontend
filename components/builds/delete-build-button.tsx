@@ -4,12 +4,19 @@
 // The Delete button of one row in "My builds". It asks "Are you sure?" with
 // the browser's confirm box (same as "Clear build" in the builder), then calls
 // the Server Action. The action refreshes the list, so the row disappears.
+//
+// Keyboard focus: the row (and this button) is removed after a delete, so
+// focus would fall back to the top of the page. We move it to the page
+// heading, which is always there.
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteBuildAction } from "@/lib/actions/builds";
+
+// The id of the <h1> in app/my/builds/page.tsx. It must be the same text.
+const HEADING_ID = "my-builds-heading";
 
 type Props = {
   slug: string;
@@ -24,6 +31,9 @@ export function DeleteBuildButton({ slug, label }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   function remove() {
+    // aria-disabled does not stop the Enter key, so we stop a second call here.
+    if (pending) return;
+
     if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
 
     setError(null);
@@ -37,8 +47,14 @@ export function DeleteBuildButton({ slug, label }: Props) {
           return;
         }
 
-        // "deleted": nothing to do here. The action already refreshed the list.
-        if (result.status === "error") setError(result.message);
+        if (result.status === "deleted") {
+          // The action already refreshed the list. Calling focus() in code is
+          // fine here: the heading exists before and after the refresh.
+          document.getElementById(HEADING_ID)?.focus();
+          return;
+        }
+
+        setError(result.message);
       } catch (caught) {
         console.error(caught);
         setError("Something went wrong. Please try again.");
@@ -52,7 +68,7 @@ export function DeleteBuildButton({ slug, label }: Props) {
         type="button"
         variant="destructive"
         size="sm"
-        disabled={pending}
+        aria-disabled={pending || undefined}
         aria-label={`Delete ${label}`}
         onClick={remove}
       >

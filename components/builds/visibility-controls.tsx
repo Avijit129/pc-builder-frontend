@@ -38,6 +38,9 @@ export function VisibilityControls({ slug, label, isPublic, shareUrl }: Props) {
   const [copyState, setCopyState] = useState<CopyState>("idle");
 
   function toggle() {
+    // aria-disabled does not stop the Enter key, so we stop a second call here.
+    if (pending) return;
+
     setError(null);
 
     startTransition(async () => {
@@ -81,7 +84,7 @@ export function VisibilityControls({ slug, label, isPublic, shareUrl }: Props) {
           type="button"
           variant="outline"
           size="sm"
-          disabled={pending}
+          aria-disabled={pending || undefined}
           onClick={toggle}
         >
           {isPublic ? <Lock /> : <Globe />}
@@ -112,7 +115,7 @@ export function VisibilityControls({ slug, label, isPublic, shareUrl }: Props) {
         )}
       </div>
 
-      <p className="mt-2 text-xs text-muted-foreground">
+      <p role="status" className="mt-2 text-xs text-muted-foreground">
         {isPublic
           ? "Anyone with the link can see this build. We ask search engines not to list it."
           : "Only you can see this build."}

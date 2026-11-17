@@ -49,7 +49,15 @@ export default function MyBuildsPage({ searchParams }: Props) {
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">My builds</h1>
+          {/* tabIndex -1: code can focus it (DeleteBuildButton does), Tab skips
+              it. The id must be the same as HEADING_ID in delete-build-button.tsx. */}
+          <h1
+            id="my-builds-heading"
+            tabIndex={-1}
+            className="text-3xl font-semibold tracking-tight"
+          >
+            My builds
+          </h1>
           <p className="mt-2 max-w-2xl text-muted-foreground">
             The builds you saved. A private build can only be seen by you.
           </p>
