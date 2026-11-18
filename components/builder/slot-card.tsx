@@ -3,7 +3,15 @@
 // components/builder/slot-card.tsx
 // One slot of the build (CPU, motherboard, ...): the parts you chose, and the
 // button that opens the part picker under it.
+//
+// Keyboard focus (the picker and the rows disappear while they have focus):
+// - After a pick, a remove, or closing the picker, focus goes back to the
+//   toggle button of this slot.
+// - When a RAM or SSD slot becomes full, the toggle button turns into the text
+//   "Limit reached". Then that text gets the focus.
+// - Esc closes the picker.
 
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { Minus, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -51,6 +59,58 @@ export function SlotCard({
   const headingId = `slot-${category.type}-heading`;
   const pickerId = `slot-${category.type}-picker`;
 
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const limitRef = useRef<HTMLSpanElement>(null);
+  // true after an action that removes the element that had focus. The effect
+  // below puts focus back and sets it to false again.
+  const needsFocus = useRef(false);
+
+  // Runs after every render, but does nothing unless needsFocus is true. This
+  // way the flag is used up by the FIRST render after the action, so it can
+  // never steal focus later (for example from the search field of a picker
+  // that opens afterwards). Reading a ref in an effect is fine.
+  useEffect(() => {
+    if (!needsFocus.current) return;
+
+    needsFocus.current = false;
+
+    // The toggle button is gone when the slot is full ("Limit reached").
+    (toggleRef.current ?? limitRef.current)?.focus();
+  });
+
+  function handleToggle() {
+    // Closing: the button can turn into "Limit reached", so remember to move focus.
+    if (isOpen) needsFocus.current = true;
+
+    onToggle();
+  }
+
+  function handlePick(item: PartItem) {
+    needsFocus.current = true;
+    // The toggle button is still here, so focus it BEFORE the picker (and the
+    // "Choose" button that has focus) is removed.
+    toggleRef.current?.focus();
+
+    onPick(item);
+  }
+
+  function handleRemove(id: number) {
+    needsFocus.current = true;
+    // The row (and its Remove button) is about to disappear.
+    toggleRef.current?.focus();
+
+    onRemove(id);
+  }
+
+  // Esc anywhere in this slot closes the picker.
+  function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key !== "Escape" || !isOpen) return;
+
+    event.preventDefault();
+    toggleRef.current?.focus();
+    handleToggle();
+  }
+
   const actionLabel =
     used === 0 ? "Choose" : repeatable ? "Add another" : "Change";
 
@@ -62,7 +122,11 @@ export function SlotCard({
         : null;
 
   return (
-    <section aria-labelledby={headingId} className="rounded-xl border bg-card">
+    <section
+      aria-labelledby={headingId}
+      className="rounded-xl border bg-card"
+      onKeyDown={handleKeyDown}
+    >
       <div className="flex items-center gap-3 p-4">
         <category.icon
           className="size-6 shrink-0 text-muted-foreground"
@@ -79,16 +143,25 @@ export function SlotCard({
         </div>
 
         {isFull && !isOpen ? (
-          <span className="text-sm text-muted-foreground">Limit reached</span>
+          // tabIndex -1: code can focus it (see the effect), Tab skips it.
+          <span
+            ref={limitRef}
+            tabIndex={-1}
+            className="text-sm text-muted-foreground"
+          >
+            <span className="sr-only">{slot.title}: </span>
+            Limit reached
+          </span>
         ) : (
           <Button
+            ref={toggleRef}
             type="button"
             size="sm"
             variant={used === 0 ? "default" : "outline"}
             aria-expanded={isOpen}
             aria-controls={showPicker ? pickerId : undefined}
             aria-label={`${isOpen ? "Close" : actionLabel} ${slot.noun}`}
-            onClick={onToggle}
+            onClick={handleToggle}
           >
             {isOpen ? "Close" : actionLabel}
           </Button>
@@ -139,12 +212,15 @@ export function SlotCard({
                     aria-label={`Quantity of ${item.name}`}
                     className="flex items-center gap-1"
                   >
+                    {/* aria-disabled, not disabled: a disabled button that has
+                        focus loses it. lib/builder.ts (changeQuantity) already
+                        ignores a change below 1 or above the limit. */}
                     <Button
                       type="button"
                       variant="outline"
-                      size="icon-xs"
+                      size="icon-sm"
                       aria-label={`One less ${item.name}`}
-                      disabled={quantity <= 1}
+                      aria-disabled={quantity <= 1 || undefined}
                       onClick={() => onChangeQuantity(item.id, -1)}
                     >
                       <Minus />
@@ -161,9 +237,9 @@ export function SlotCard({
                     <Button
                       type="button"
                       variant="outline"
-                      size="icon-xs"
+                      size="icon-sm"
                       aria-label={`One more ${item.name}`}
-                      disabled={isFull}
+                      aria-disabled={isFull || undefined}
                       onClick={() => onChangeQuantity(item.id, 1)}
                     >
                       <Plus />
@@ -176,7 +252,7 @@ export function SlotCard({
                   variant="ghost"
                   size="icon-sm"
                   aria-label={`Remove ${item.name} from the build`}
-                  onClick={() => onRemove(item.id)}
+                  onClick={() => handleRemove(item.id)}
                 >
                   <X />
                 </Button>
@@ -193,7 +269,8 @@ export function SlotCard({
             category={category}
             repeatable={repeatable}
             selectedIds={parts.map((part) => part.item.id)}
-            onPick={onPick}
+            onPick={handlePick}
+            autoFocusSearch
           />
         </div>
       )}

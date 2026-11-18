@@ -35,6 +35,11 @@ type Props = {
   /** Ids of the parts of this type that are already in the build. */
   selectedIds: number[];
   onPick: (item: PartItem) => void;
+  /**
+   * true: move focus to the search field when the picker opens. Off by default,
+   * so a picker that is open when the page loads (compare page) never steals focus.
+   */
+  autoFocusSearch?: boolean;
 };
 
 type Answer = {
@@ -48,6 +53,7 @@ export function PartPicker({
   repeatable,
   selectedIds,
   onPick,
+  autoFocusSearch = false,
 }: Props) {
   const searchId = useId();
   const [input, setInput] = useState("");
@@ -128,6 +134,7 @@ export function PartPicker({
         <input
           id={searchId}
           type="search"
+          autoFocus={autoFocusSearch}
           maxLength={100}
           value={input}
           onChange={(event) => setInput(event.target.value)}

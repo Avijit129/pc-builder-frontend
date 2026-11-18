@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { CompatibilityResultView } from "@/components/builder/compatibility-result";
 import type { BuilderPart } from "@/lib/builder";
+import { OVERALL_TEXT, countText } from "@/lib/compatibility";
 import type { BuildCheckState } from "@/lib/use-build-check";
 
 type Props = {
@@ -62,6 +63,21 @@ export function CompatibilityPanel({ parts, check }: Props) {
     );
   }
 
+  // What a screen reader says when a check has finished, for example
+  // "Problems found. 2 problems, 1 warning". It is empty while a check runs,
+  // so every finished check is a new message. (The result box itself cannot
+  // be the live region: it appears together with its text, so nothing would
+  // be said for the first result.)
+  const summary =
+    check.enabled && !check.loading && !check.error && check.result !== null
+      ? [
+          OVERALL_TEXT[check.result.status].title,
+          countText(check.result.checks).replace(/ · /g, ", "),
+        ]
+          .filter((part) => part !== "")
+          .join(". ")
+      : "";
+
   return (
     <section
       aria-labelledby="compat-heading"
@@ -71,9 +87,14 @@ export function CompatibilityPanel({ parts, check }: Props) {
         <h2 id="compat-heading" className="font-medium">
           Compatibility
         </h2>
-        {/* A live region: screen readers say "Checking…" when it appears. */}
+        {/* One live region that is always in the page. It says "Checking…"
+            while a check runs, and then the hidden summary of the result. */}
         <span role="status" className="text-xs text-muted-foreground">
-          {check.loading ? "Checking…" : ""}
+          {check.loading ? (
+            "Checking…"
+          ) : (
+            <span className="sr-only">{summary}</span>
+          )}
         </span>
       </div>
 
