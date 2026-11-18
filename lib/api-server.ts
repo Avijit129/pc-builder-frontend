@@ -31,6 +31,12 @@ type Options = {
   body?: unknown;
   /** The Sanctum token. Sent as "Authorization: Bearer ...". */
   token?: string | null;
+  /**
+   * The visitor address (see lib/visitor-ip.ts). Only for login and register.
+   * It is sent only when VISITOR_IP_SECRET is set, and Laravel believes it
+   * only when the secret matches.
+   */
+  visitorIp?: string | null;
 };
 
 export async function serverRequest<T>(
@@ -46,6 +52,14 @@ export async function serverRequest<T>(
 
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
+
+  // NOT a NEXT_PUBLIC_ variable: the secret must never reach the browser.
+  const visitorSecret = process.env.VISITOR_IP_SECRET;
+
+  if (options.visitorIp && visitorSecret) {
+    headers["X-Visitor-IP"] = options.visitorIp;
+    headers["X-Visitor-Secret"] = visitorSecret;
+  }
 
   let response: Response;
 

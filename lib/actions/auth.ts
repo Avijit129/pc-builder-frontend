@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { serverRequest, type FailedResponse } from "@/lib/api-server";
 import { safeNextPath } from "@/lib/safe-redirect";
+import { getVisitorIp } from "@/lib/visitor-ip";
 import {
   clearSessionToken,
   getSessionToken,
@@ -83,7 +84,10 @@ export async function registerAction(
   const response = await serverRequest<ApiData<AuthResult>>(
     "POST",
     "/auth/register",
-    { body: { name, email, password, device_name: DEVICE_NAME } },
+    {
+      body: { name, email, password, device_name: DEVICE_NAME },
+      visitorIp: await getVisitorIp(),
+    },
   );
 
   // The password is never sent back to the form.
@@ -109,7 +113,10 @@ export async function loginAction(
   const response = await serverRequest<ApiData<AuthResult>>(
     "POST",
     "/auth/login",
-    { body: { email, password, device_name: DEVICE_NAME } },
+    {
+      body: { email, password, device_name: DEVICE_NAME },
+      visitorIp: await getVisitorIp(),
+    },
   );
 
   if (!response.ok) return failure(response, { email });
