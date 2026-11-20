@@ -5,12 +5,9 @@
 // The box scrolls sideways on small screens and can get keyboard focus, so
 // people without a mouse can scroll it. The first column stays in view.
 
-/* eslint-disable @next/next/no-img-element --
-   A plain <img> on purpose, same as the cards: we do not know the image
-   domains yet. Later we can switch to next/image. */
-
 import Link from "next/link";
 import { X } from "lucide-react";
+import { CatalogImage } from "@/components/catalog/catalog-image";
 import { Button } from "@/components/ui/button";
 import type { CompareSection } from "@/lib/compare";
 import { compareHref } from "@/lib/compare-url";
@@ -131,14 +128,16 @@ function PartHeader({
       scope="col"
       className="w-56 min-w-44 px-4 py-4 text-left align-top font-normal"
     >
-      <div className="flex aspect-[4/3] items-center justify-center rounded-md bg-muted/40 p-2">
+      <div className="relative flex aspect-[4/3] items-center justify-center rounded-md bg-muted/40">
         {component.image ? (
           // alt="" because the name of the part is written below it.
-          <img
+          // The columns grow when there are few parts, so "sizes" asks for a
+          // bigger picture than the smallest column.
+          <CatalogImage
             src={component.image}
             alt=""
-            loading="lazy"
-            className="max-h-full max-w-full object-contain"
+            sizes="(min-width: 768px) 400px, 176px"
+            className="object-contain p-2"
           />
         ) : (
           <category.icon

@@ -162,9 +162,7 @@ function HistoryBody({ history }: { history: PriceHistory }) {
           aria-labelledby="price-chart-title price-chart-desc"
           className="block h-auto w-full min-w-[28rem]"
         >
-          <title id="price-chart-title">
-            Price history, last {history.days} days
-          </title>
+          <title id="price-chart-title">{`Price history, last ${history.days} days`}</title>
           <desc id="price-chart-desc">
             Lowest in-stock price per day.{" "}
             {summaryText !== "" ? `${summaryText}.` : ""}

@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
+import { CatalogImage } from "@/components/catalog/catalog-image";
 import { CompareToggle } from "@/components/compare/compare-toggle";
 import { formatPrice, formatSpecValue } from "@/lib/format";
 import { LIST_SPECS } from "@/lib/list-specs";
@@ -28,16 +29,15 @@ export function ComponentCard({ category, item }: Props) {
         href={href}
         className="flex flex-1 flex-col transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring/50"
       >
-        <div className="flex aspect-[4/3] items-center justify-center bg-muted/40 p-4">
+        <div className="relative flex aspect-[4/3] items-center justify-center bg-muted/40">
           {item.image ? (
-            // A plain <img> for now. We do not know the image domains yet.
-            // Later we can switch to next/image (needs images.remotePatterns).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            // CatalogImage fills this box (it is "relative" now). The padding
+            // is on the image, so the picture keeps its 16 px of space.
+            <CatalogImage
               src={item.image}
               alt={item.name}
-              loading="lazy"
-              className="max-h-full max-w-full object-contain"
+              sizes="(min-width: 1280px) 300px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+              className="object-contain p-4"
             />
           ) : (
             <category.icon

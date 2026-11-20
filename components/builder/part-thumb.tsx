@@ -1,10 +1,7 @@
 // components/builder/part-thumb.tsx
 // The small square picture of a part. Without a picture, the icon of its category.
 
-/* eslint-disable @next/next/no-img-element --
-   A plain <img> on purpose, same as the cards: we do not know the image
-   domains yet. Later we can switch to next/image. */
-
+import { CatalogImage } from "@/components/catalog/catalog-image";
 import type { PartItem } from "@/lib/builder";
 import type { Category } from "@/lib/site";
 
@@ -15,14 +12,15 @@ type Props = {
 
 export function PartThumb({ category, item }: Props) {
   return (
-    <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-muted/40 p-1">
+    // "relative": CatalogImage fills this box.
+    <div className="relative flex size-12 shrink-0 items-center justify-center rounded-md bg-muted/40">
       {item.image ? (
         // alt="" because the name of the part is always written next to it.
-        <img
+        <CatalogImage
           src={item.image}
           alt=""
-          loading="lazy"
-          className="max-h-full max-w-full object-contain"
+          sizes="48px"
+          className="object-contain p-1"
         />
       ) : (
         <category.icon

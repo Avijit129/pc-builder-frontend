@@ -1,11 +1,8 @@
 // components/guides/guide-card.tsx
 // One guide on the /guides list page. A Server Component.
 
-/* eslint-disable @next/next/no-img-element --
-   A plain <img> on purpose, same as the other cards: we do not know the image
-   domains yet. Later we can switch to next/image. */
-
 import Link from "next/link";
+import { CatalogImage } from "@/components/catalog/catalog-image";
 import { formatDate } from "@/lib/format";
 import type { GuideListItem } from "@/lib/types";
 
@@ -25,13 +22,14 @@ export function GuideCard({
       className="flex h-full flex-col overflow-hidden rounded-xl border bg-card transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       {guide.image && (
-        <div className="aspect-[16/9] bg-muted/40">
+        // "relative": CatalogImage fills this box.
+        <div className="relative aspect-[16/9] bg-muted/40">
           {/* alt="" because the title is written right below the picture. */}
-          <img
+          <CatalogImage
             src={guide.image}
             alt=""
-            loading="lazy"
-            className="size-full object-cover"
+            sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+            className="object-cover"
           />
         </div>
       )}

@@ -1,11 +1,8 @@
-/* eslint-disable @next/next/no-img-element --
-   A plain <img> on purpose, same as the cards: we do not know the image
-   domains yet. Later we can switch to next/image. */
-
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/catalog/breadcrumbs";
+import { CatalogImage } from "@/components/catalog/catalog-image";
 import { JsonLd } from "@/components/catalog/json-ld";
 import { apiGet } from "@/lib/api";
 import { formatDate } from "@/lib/format";
@@ -136,11 +133,17 @@ async function GuideContent({ params }: Props) {
 
         {guide.image && (
           // alt="" because the title is written right above the picture.
-          <img
-            src={guide.image}
-            alt=""
-            className="mt-6 aspect-[16/9] w-full rounded-xl border object-cover"
-          />
+          // It is the biggest picture on the page, so it loads at once
+          // (loading="eager") and not lazily.
+          <div className="relative mt-6 aspect-[16/9] w-full overflow-hidden rounded-xl border">
+            <CatalogImage
+              src={guide.image}
+              alt=""
+              sizes="(min-width: 768px) 768px, 100vw"
+              loading="eager"
+              className="object-cover"
+            />
+          </div>
         )}
 
         {/* The text is plain text. React escapes it, and pre-line keeps a
