@@ -10,10 +10,15 @@
 //
 // The idea comes from SingleProduct.jsx: the lens follows the mouse, and the
 // zoom window shows the same picture bigger, moved to the lens position.
-
-/* eslint-disable @next/next/no-img-element --
-   A plain <img> on purpose, same as the cards: we do not know the image
-   domains yet. Later we can switch to next/image. */
+//
+// Two different files of the same picture are used on purpose:
+// - The picture on the page and the thumbnails go through CatalogImage, so
+//   they are small (resized, WebP).
+// - The zoom window uses the ORIGINAL file, because it shows the picture 3
+//   times bigger and a small file would look blurry. It is downloaded only
+//   when a mouse is on the picture (see loadZoomPicture).
+// The lens maths only uses the WIDTH / HEIGHT RATIO of the picture. That ratio
+// is the same in both files, so the maths works with the small file.
 
 import {
   useRef,
@@ -21,6 +26,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { CatalogImage } from "@/components/catalog/catalog-image";
 import { cn } from "@/lib/utils";
 
 export type GalleryImage = {
@@ -65,6 +71,12 @@ export function ZoomGallery({ images, children }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   // null = the mouse is not on the picture, so no lens and no zoom window.
   const [zoom, setZoom] = useState<ZoomState | null>(null);
+  // The addresses of the big pictures that have finished loading. The zoom
+  // only starts for a picture in this list.
+  const [readyUrls, setReadyUrls] = useState<string[]>([]);
+  // The addresses we already started to load, so a mouse move never starts a
+  // second download. A ref, because changing it must not redraw the page.
+  const requestedUrls = useRef<Set<string>>(new Set());
 
   const boxRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -74,12 +86,27 @@ export function ZoomGallery({ images, children }: Props) {
   const currentIndex = Math.min(activeIndex, images.length - 1);
   const current: GalleryImage | undefined = images[currentIndex];
 
+  // Downloads the ORIGINAL picture for the zoom window, once per picture.
+  // It runs only from a mouse move on a wide screen, so phones and visitors
+  // who never hover never download it. If the download fails, that picture
+  // simply has no zoom. The page still works.
+  function loadZoomPicture(url: string) {
+    if (requestedUrls.current.has(url)) return;
+
+    requestedUrls.current.add(url);
+
+    const picture = new window.Image();
+
+    picture.onload = () => setReadyUrls((urls) => [...urls, url]);
+    picture.src = url;
+  }
+
   function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const box = boxRef.current;
     const image = imageRef.current;
     const aside = asideRef.current;
 
-    if (!box || !image || !aside) return;
+    if (!box || !image || !aside || !current) return;
 
     // A finger scrolls the page, so only a mouse zooms. And only on wide
     // screens, where the text is beside the picture.
@@ -90,7 +117,14 @@ export function ZoomGallery({ images, children }: Props) {
       return;
     }
 
-    // Not loaded yet: we do not know its real size.
+    // The big picture is not ready yet: start loading it. The zoom starts
+    // with a mouse move after it has loaded (no empty zoom window).
+    if (!readyUrls.includes(current.url)) {
+      loadZoomPicture(current.url);
+      return;
+    }
+
+    // The small picture is not loaded yet: we do not know its shape.
     if (image.naturalWidth === 0 || image.naturalHeight === 0) return;
 
     // 1. Where is the picture inside the box? The picture is shown with
@@ -160,6 +194,9 @@ export function ZoomGallery({ images, children }: Props) {
           ref={boxRef}
           onPointerMove={handlePointerMove}
           onPointerLeave={() => setZoom(null)}
+          // CatalogImage has no "draggable" option, so we stop the drag of the
+          // picture here (the event bubbles up from the <img>).
+          onDragStart={(event) => event.preventDefault()}
           style={{ aspectRatio: ASPECT_RATIO }}
           className={cn(
             "relative overflow-hidden rounded-xl border bg-muted/40",
@@ -168,17 +205,23 @@ export function ZoomGallery({ images, children }: Props) {
         >
           {current ? (
             <>
-              <img
+              {/* The biggest picture of the page, so it loads at once
+                  (loading="eager"). "sizes" follows the grid below: about
+                  45% of the screen from "md", about 560 px from "xl". */}
+              <CatalogImage
                 ref={imageRef}
                 src={current.url}
                 alt={current.alt}
-                draggable={false}
-                className="absolute inset-0 size-full object-contain"
+                sizes="(min-width: 1280px) 560px, (min-width: 768px) 45vw, 100vw"
+                loading="eager"
+                className="object-contain"
               />
 
               {zoom && (
                 // pointer-events-none: the lens must never catch the mouse,
                 // or the zoom would flicker on and off.
+                // A plain <img> on purpose: a small local GIF, nothing to resize.
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src="/lense.gif"
                   aria-hidden="true"
@@ -189,7 +232,7 @@ export function ZoomGallery({ images, children }: Props) {
                     width: zoom.lens.width,
                     height: zoom.lens.height,
                   }}
-                  alt="lense"
+                  alt=""
                 />
               )}
             </>
@@ -207,23 +250,25 @@ export function ZoomGallery({ images, children }: Props) {
           >
             {images.map((image, index) => (
               <li key={`${index}-${image.url}`} className="shrink-0">
+                {/* "relative": CatalogImage fills this button. The padding is
+                    on the picture (p-1), not on the button. */}
                 <button
                   type="button"
                   onClick={() => setActiveIndex(index)}
                   aria-label={`Show image ${index + 1} of ${images.length}`}
                   aria-current={index === currentIndex ? "true" : undefined}
                   className={cn(
-                    "flex size-16 items-center justify-center rounded-md border bg-muted/40 p-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                    "relative flex size-16 items-center justify-center rounded-md border bg-muted/40 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                     index === currentIndex
                       ? "border-primary"
                       : "hover:border-ring",
                   )}
                 >
-                  <img
+                  <CatalogImage
                     src={image.url}
                     alt=""
-                    loading="lazy"
-                    className="max-h-full max-w-full object-contain"
+                    sizes="64px"
+                    className="object-contain p-1"
                   />
                 </button>
               </li>
@@ -244,6 +289,7 @@ export function ZoomGallery({ images, children }: Props) {
             style={{
               aspectRatio: ASPECT_RATIO,
               // JSON.stringify adds quotes, so a strange URL cannot break the CSS.
+              // This is the ORIGINAL file (see the top of this file).
               backgroundImage: `url(${JSON.stringify(current.url)})`,
               backgroundSize: zoom.backgroundSize,
               backgroundPosition: zoom.backgroundPosition,

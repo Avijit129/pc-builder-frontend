@@ -12,6 +12,7 @@
 // without the optimizer (unoptimized), exactly like a plain <img>.
 
 import Image from "next/image";
+import type { Ref } from "react";
 import { canOptimize } from "@/lib/images";
 
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
   className?: string;
   /** Use "eager" for the biggest picture at the top of a page. */
   loading?: "lazy" | "eager";
+  /** For code that needs the real <img> element (the zoom gallery reads its size). */
+  ref?: Ref<HTMLImageElement>;
 };
 
 export function CatalogImage({
@@ -29,11 +32,13 @@ export function CatalogImage({
   sizes,
   className,
   loading = "lazy",
+  ref,
 }: Props) {
   const address = src.trim();
 
   return (
     <Image
+      ref={ref}
       src={address}
       alt={alt}
       fill
