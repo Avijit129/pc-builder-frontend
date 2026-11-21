@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { BrandLinks } from "@/components/catalog/brand-links";
 import { ComponentCard } from "@/components/catalog/component-card";
@@ -9,6 +10,7 @@ import { getBrands } from "@/lib/get-brands";
 import { LIST_FILTERS } from "@/lib/list-filters";
 import {
   PER_PAGE,
+  listHref,
   parseListParams,
   type ListParams,
   type RawSearchParams,
@@ -86,6 +88,14 @@ export async function CategoryListing({
   );
 
   const { total, current_page, last_page } = result.meta;
+
+  // ?page=99 on a list with 2 pages would be a thin page, and a page 2 or
+  // higher now has its own canonical address. So go to the last real page
+  // (same idea as app/guides/page.tsx). Search and filters are kept.
+  // redirect() throws on purpose, so it is never inside try/catch.
+  if (current_page > last_page) {
+    redirect(listHref(basePath, params, last_page));
+  }
 
   return (
     <>

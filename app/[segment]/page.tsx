@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CategoryListing } from "@/components/catalog/category-listing";
 import { ListSkeleton } from "@/components/catalog/list-skeleton";
-import type { RawSearchParams } from "@/lib/list-params";
+import {
+  canonicalListPath,
+  pageTitleSuffix,
+  parseListParams,
+  type RawSearchParams,
+} from "@/lib/list-params";
 import { CATEGORIES, getCategoryBySegment } from "@/lib/site";
 
 import { Scale } from "lucide-react";
@@ -24,17 +29,22 @@ export function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: Pick<Props, "params">): Promise<Metadata> {
+  searchParams,
+}: Props): Promise<Metadata> {
   const { segment } = await params;
   const category = getCategoryBySegment(segment);
 
   if (!category) return {};
 
+  // The same cleaning as the list itself, so the tags always match the page.
+  const listParams = parseListParams(await searchParams, category.type);
+
   return {
     // The layout adds " | PC Builder" to this title.
-    title: category.label,
+    title: `${category.label}${pageTitleSuffix(listParams)}`,
     description: `Browse and compare ${category.label}: specs, prices and compatibility.`,
-    alternates: { canonical: `/${category.segment}` },
+    // /cpu, or /cpu?page=2 for a plain page 2 (see lib/list-params.ts).
+    alternates: { canonical: canonicalListPath(category.segment, listParams) },
   };
 }
 

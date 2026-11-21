@@ -10,7 +10,7 @@
 // - /builder: no props, an empty new build.
 // - /my/builds/[slug]/edit (G2c): start values from a saved build.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CompatibilityPanel } from "@/components/builder/compatibility-panel";
 import { MobileStatusBar } from "@/components/builder/mobile-status-bar";
@@ -165,13 +165,21 @@ function BuildSummary({
   const count = parts.reduce((sum, part) => sum + part.quantity, 0);
   const estimate = estimatePrice(parts);
   const price = describeEstimate(estimate);
+  // The heading gets focus after "Clear build" (see the button below).
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <section
       aria-labelledby="summary-heading"
       className="rounded-xl border bg-card p-4"
     >
-      <h2 id="summary-heading" className="font-medium">
+      {/* tabIndex -1: code can focus it, Tab skips it. */}
+      <h2
+        ref={headingRef}
+        id="summary-heading"
+        tabIndex={-1}
+        className="font-medium"
+      >
         Your build
       </h2>
 
@@ -211,7 +219,13 @@ function BuildSummary({
           className="mt-4"
           onClick={() => {
             // A clear button is easy to press by mistake, so we ask first.
-            if (window.confirm("Remove all parts from this build?")) onClear();
+            if (!window.confirm("Remove all parts from this build?")) return;
+
+            // The button disappears when the build is empty, and focus would
+            // fall back to the top of the page. The heading is always there,
+            // so focus goes to it first.
+            headingRef.current?.focus();
+            onClear();
           }}
         >
           Clear build

@@ -137,3 +137,27 @@ export function listHref(
 
   return queryString ? `/${segment}?${queryString}` : `/${segment}`;
 }
+
+/**
+ * The canonical address of a list page, for the <link rel="canonical"> tag.
+ * "segment" is the same as in listHref: "cpu" or "cpu/amd".
+ * "params" must come from parseListParams, so wrong values are already gone
+ * (the page ignores them too, so they must not change the canonical address).
+ *
+ * - Page 1 points to the plain address: /cpu
+ * - A plain page 2, 3 ... points to itself: /cpu?page=2
+ * - A page with a search, a sort, a brand or a filter is a filtered copy of
+ *   the list, so it points to the plain address (same as before).
+ */
+export function canonicalListPath(segment: string, params: ListParams): string {
+  if (hasActiveFilters(params)) return `/${segment}`;
+
+  return listHref(segment, params);
+}
+
+/** " - Page 2" for a plain page 2 or higher, so every page has its own title. */
+export function pageTitleSuffix(params: ListParams): string {
+  return !hasActiveFilters(params) && params.page > 1
+    ? ` - Page ${params.page}`
+    : "";
+}

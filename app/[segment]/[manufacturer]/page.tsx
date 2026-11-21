@@ -6,7 +6,12 @@ import { CategoryListing } from "@/components/catalog/category-listing";
 import { JsonLd } from "@/components/catalog/json-ld";
 import { ListSkeleton } from "@/components/catalog/list-skeleton";
 import { getBrands } from "@/lib/get-brands";
-import type { RawSearchParams } from "@/lib/list-params";
+import {
+  canonicalListPath,
+  pageTitleSuffix,
+  parseListParams,
+  type RawSearchParams,
+} from "@/lib/list-params";
 import {
   CATEGORIES,
   SITE_NAME,
@@ -60,7 +65,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({
   params,
-}: Pick<Props, "params">): Promise<Metadata> {
+  searchParams,
+}: Props): Promise<Metadata> {
   const { segment, manufacturer } = await params;
   const category = getCategoryBySegment(segment);
 
@@ -71,20 +77,32 @@ export async function generateMetadata({
 
   if (!brand) return {};
 
-  const { title, description } = brandText(category, brand);
-  const path = `/${category.segment}/${brand.slug}`;
+  // On a brand page the brand is in the path, so a ?manufacturer= in the URL
+  // is ignored (CategoryListing does the same). It must not change the canonical.
+  const listParams = {
+    ...parseListParams(await searchParams, category.type),
+    manufacturer: "",
+  };
+
+  const text = brandText(category, brand);
+  // "Page 2" in the title of a plain page 2 or higher. The visible <h1> stays.
+  const title = `${text.title}${pageTitleSuffix(listParams)}`;
+  const { description } = text;
+  // /cpu/amd, or /cpu/amd?page=2 for a plain page 2.
+  const canonical = canonicalListPath(
+    `${category.segment}/${brand.slug}`,
+    listParams,
+  );
 
   return {
     // The layout adds " | PC Builder" to this title.
     title,
     description,
-    // Always the plain brand address. Page 2 and filter URLs are handled in the
-    // later SEO step (D2), together with the category pages.
-    alternates: { canonical: path },
+    alternates: { canonical },
     openGraph: {
       type: "website",
       siteName: SITE_NAME,
-      url: path,
+      url: canonical,
       title,
       description,
     },
